@@ -1,0 +1,6 @@
+tf:xorgproto-2018.4.tar.bz2
+sdn:xorgproto-2018.4
+hasBuildDir:0
+bypassImplement:1
+tasks:unpack,config,compile,install,implement,cleanup
+wgetUrl:
