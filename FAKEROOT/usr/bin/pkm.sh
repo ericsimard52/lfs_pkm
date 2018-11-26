@@ -93,7 +93,7 @@ function installManager {
     # Directories has to be created
     # Files need to be installed
     ###
-    FbaseDir="/root/LFS_Pkm/FAKEROOT"
+    FbaseDir=`pwd`'/../..'
     log "GEN|INFO|Installing pkm."
     sudo install -vdm755 /usr/{bin,share/pkm}
     sudo install -vdm755 /var/{log/pkm,run/pkm/pipes,cache/pkm}
@@ -765,14 +765,6 @@ function listTask {
 }
 
 ###
-# This is still used, but should not be.
-###
-function evalError {
-    log "GEN|WARNING|Call to deprecated evalError functionc." t
-    log "ERR|ERROR|Error during eval: $1" true
-}
-
-###
 # Evaluate user commands from the general prompt.
 ###
 function evalPrompt {
@@ -941,6 +933,18 @@ function prompt {
     done
 }
 
+## Checking user parameters
+for arg in "$@"
+do
+    case "$arg" in
+        --installManager)
+            installManager
+            exit 0
+            ;;
+    esac
+done
+
+
 singleton ## Ensure only one instance runs.
 
 log "NULL|INFO|Starting PKM" t
@@ -950,6 +954,5 @@ log "NULL|INFO|Starting log managers" t
 testPkm
 startLog
 log "NULL|INFO|Testing pkm installation." t
-
 
 prompt
