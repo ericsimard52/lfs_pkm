@@ -1,12 +1,13 @@
 #!/bin/bash
 
 declare configFile="/root/LFS_Pkm/FAKEROOT/etc/pkm/pkm.conf"
+declare devBase="/home/tech/Git/lfs_pkm/FAKEROOT"
 declare sd td sdn sdnConf ext hasBuildDir buildDir confBase bypassImplement wgetUrl FAKEROOT
 declare unpackCmd
 declare MAKEFLAGS
-declare pipeDir genLogPipe pkgLogPipe impLogPipe errLogPipe
-declare genLogManager pkgLogManager impLogManager errLogManager
 declare DBG_LVL=0 #Change to 1 to turn debug on.
+declare genLogFile pkgLogFile impLogFile errLogFile
+declare genLogFD pkgLogFD impLogFD errLogFD #File descriptor input only
 declare isImplemented=1 # This changes to 0 when implementation is done.
 declare CURSTATE=0 # Set to 1 to exit program succesfully
 
@@ -16,7 +17,6 @@ declare genConfigFile preconfigCmdFile configCmdFile compileCmdFile checkCmdFile
 declare preInstallCmdFile installCmdFile preImplementCmdFile postImplementCmdFile
 declare -a cmdFileList
 declare -a autoInstallCmdList
-
 function singleton {
     if [ ! -d /var/run/pkm ]; then
         log "NULL|FATAL|Directory /var/run/pkm does not exists. Do you need to run installPkm?" t
@@ -37,81 +37,65 @@ function importLfsScriptedImplementLogs {
     popd
 }
 
-function testPkm {
-    # Checking if log Managers exists and are running
-    # echo "Test multi pipe log message"
-    # log "{GEN,ERR}|INFO|MULTIPIPE MESSAGE"
-    log "NULL|INFO|Checking log pipes." t
-    if [[ ! -d $pipeDir ]]; then
-        install -vdm755 $pipeDir
-    fi
-    if [ ! -p $pipeDir/$genLogPipe ]; then
-        log "NULL|WARNING|General log pipe not present, creating..." t
-        mkfifo -m 666 $pipeDir/$genLogPipe
-    fi
-    if [ ! -p $pipeDir/$pkgLogPipe ]; then
-        log "NULL|WARNING|Package log pipe missing, creating..." t
-        mkfifo -m 666 $pipeDir/$pkgLogPipe
-    fi
-    if [ ! -p $pipeDir/$impLogPipe ]; then
-        log "NULL|WARNING|Implement log pipe missing, creating..." t
-        mkfifo -m 666 $pipeDir/$impLogPipe
-    fi
-    if [ ! -p $pipeDir/$errLogPipe ]; then
-        log "NULL|WARNING|Error log pipe missing, creating..." t
-        mkfifo -m 666 $pipeDir/$errLogPipe
-    fi
-}
-
 function startLog {
-    log "NULL|INFO|Loading ${genLogManager}" t
-    pid=`ps -a --no-headers -o pid,cmd | grep $genLogManager | wc -l`
-    if [[ $pid > 1 ]]; then
-       log "GEN|WARNING|$genLogManager is running, we have $pid counts." t
-       killall $genLogManager
+    if [ ! -f $genLogFile ]; then
+        log "NULL|INFO|Creating $genLogFile"
+        > $genLogFile
+        sudo chmod 666 -v $genLogFile
     fi
-    exec $genLogManager &
-    log "GEN|INFO|:STARTLOG:General log manager started." t
-
-    log "GEN|INFO|Loading ${pkgLogManager}" t
-    exec $pkgLogManager &
-    log "PKG|INFO|:STARTLOG:Package log manager started." t
-
-    log "GEN|INFO|Loading ${impLogManager}" t
-    exec $impLogManager &
-    log "IMP|INFO|:STARTLOG:Implement log manager started." t
-
-    log "GEN|INFO|Loading ${errLogManager}" t
-    exec $errLogManager &
-    log "ERR|INFO|:STARTLOG:Error log manager started." t
+    if [ ! -f $pkgLogFile ]; then
+        log "NULL|INFO|Creating $pkgLogFile"
+        > $pkgLogFile
+        sudo chmod 666 -v $pkgLogFile
+    fi
+    if [ ! -f $impLogFile ]; then
+        log "NULL|INFO|Creating $impLogFile"
+        > $impLogFile
+        sudo chmod 666 -v $impLogFile
+    fi
+    if [ ! -f $errLogFile ]; then
+        log "NULL|INFO|Creating $errLogFile"
+        > $errLogFile
+        sudo chmod 666 -v $errLogFile
+    fi
+    exec {genLogFD}>$genLogFile
+    exec {pkgLogFD}>$pkgLogFile
+    exec {impLogFD}>$impLogFile
+    exec {errLogFD}>$errLogFile
 }
 
 function installManager {
-    ###
-    # config file needs to contain:
-    # pipeDir , genLogPipe, pkgLogPipe, implementLogPipe, errLogPipe
-    # Directories has to be created
-    # Files need to be installed
-    ###
-    FbaseDir=`pwd`'/../..'
-    log "GEN|INFO|Installing pkm."
+    userId=`id -u`
+    if [[ $userId -gt 0 ]]; then
+        log "NULL|INFO|Run install manager as root." t
+        exit 1
+    fi
+
+    FbaseDir=$devBase
+    log "NULL|INFO|Check if user and group pkm exists" t
+    ucount=`</etc/passwd grep pkm | wc -l`
+    if [[ $ucount < 1 ]]; then
+        log "NULL|INFO|Creating user pkm" t
+        useradd -c "PKM User" -s /bin/false -M -r -U pkm
+    fi
+    gcount=`</etc/group grep pkm | wc -l`
+    if [[ $gcount < 1 ]]; then # No pkm group, the user creation should have created it, but lets do it.
+        log "NULL|INFO|Creating pkm group" t
+        groupadd -r pkm
+    fi
+
+    log "GEN|INFO|Installing pkm." t
     sudo install -vdm755 /usr/{bin,share/pkm}
-    sudo install -vdm755 /var/{log/pkm,run/pkm/pipes,cache/pkm}
+    sudo install -g pkm -o pkm -vdm775 /var/{log/pkm,run/pkm,cache/pkm}
     sudo install -vdm755 /etc/pkm
-    sudo install -vm644 $FbaseDir/etc/pkm/confTemplate /etc/pkm/confTemplate
-    sudo install -v -m 644 $FbaseDir/etc/pkm/pkm.conf /etc/pkm/pkm.conf
-    sudo install -vm755 $FbaseDir/usr/bin/pkm_errLogManager.sh /usr/bin/pkm_errLogManager.sh
-    sudo install -vm755 $FbaseDir/usr/bin/pkm_genLogManager.sh /usr/bin/pkm_genLogManager.sh
-    sudo install -vm755 $FbaseDir/usr/bin/pkm_impLogManager.sh /usr/bin/pkm_impLogManager.sh
-    sudo install -vm755 $FbaseDir/usr/bin/pkm_pkgLogManager.sh /usr/bin/pkm_pkgLogManager.sh
+    sudo install -o pkm -g pkm -v -m 664 $FbaseDir/etc/pkm/pkm.conf /etc/pkm/pkm.conf
     sudo install -vm755 $FbaseDir/usr/bin/pkm.sh /usr/bin/pkm.sh
     log "GEN|INFO|Files are installed, changing some dev variable to production." t
     sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT\/etc\/pkm\/pkm.conf/\/etc\/pkm\/pkm.conf/g' /usr/bin/pkm.sh
     sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT//g' /etc/pkm/pkm.conf
-    sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT//g' /usr/bin/pkm_errLogManager.sh
-    sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT//g' /usr/bin/pkm_genLogManager.sh
-    sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT//g' /usr/bin/pkm_impLogManager.sh
-    sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT//g' /usr/bin/pkm_pkgLogManager.sh
+
+    log "NULL|INFO|Don't forget to add your normal user account to the pkm group."
+
 }
 
 ###
@@ -129,7 +113,17 @@ MAKEFLAGS: $MAKEFLAGS
 buildDir: $buildDir
 LFS: $LFS
 configFile: $configFile
-confBase: $confBase"
+confBase: $confBase
+genLog: $genLogFile
+genLogFD: $genLogFD
+pkgLog: $pkgLogFile
+pkgLogFD: $pkgLogFD
+impLog: $impLogFile
+impLogFD: $impLogFD
+errLog: $errLogFile
+errLogFD: $errLogFD
+"
+
 }
 
 ###
@@ -150,15 +144,11 @@ function readConfig {
             MAKEFLAGS) MAKEFLAGS=${PARAM[1]};;
             FAKEROOT) FAKEROOT=${PARAM[1]};;
             bypassImplement) bypassImplement=${PARAM[1]};;
-            pipeDir) pipeDir=${PARAM[1]};;
-            genLogPipe) genLogPipe=${PARAM[1]};;
-            pkgLogPipe) pkgLogPipe=${PARAM[1]};;
-            errLogPipe) errLogPipe=${PARAM[1]};;
-            impLogPipe) impLogPipe=${PARAM[1]};;
-            genLogManager) genLogManager=${PARAM[1]};;
-            pkgLogManager) pkgLogManager=${PARAM[1]};;
-            errLogManager) errLogManager=${PARAM[1]};;
-            impLogManager) impLogManager=${PARAM[1]};;
+            genLog) genLogFile=${PARAM[1]};;
+            pkgLog) pkgLogFile=${PARAM[1]};;
+            errLog) errLogFile=${PARAM[1]};;
+            impLog) impLogFile=${PARAM[1]};;
+            \#|\#\#|\#\#\#) log "NULL|INFO|COMMENT";;
             *) log "NULL|WARNING|Unknown config param" t;;
         esac
         unset IFS
@@ -203,35 +193,36 @@ function fetchPkg {
 #   End session: :ENDLOG:
 ###
 function log {
-    declare TSO LEVEL COLOR MSG M
-    declare -a PIPE
+    declare LEVEL COLOR MSG M
+    declare -a FDs # Array of file descriptor where messages needs to be redirected to.
     MSGEND="\e[0m" ## Clear all formatting
     IFS='|' read -ra PARTS <<< $1
     case "${PARTS[0]}" in
         \{*)
-            IFS=',' read -ra MPIPES <<< ${PARTS[0]}
+            IFS=',' read -ra DEST <<< ${PARTS[0]}
             i=0
-            while [[ $i < ${#MPIPES[@]} ]]; do
-                t="${MPIPES[$i]}"
+            while [[ $i < ${#DEST[@]} ]]; do
+                t="${DEST[$i]}"
                 t="${t/\}}"
                 t="${t/\{}"
                 case "$t" in
-                    GEN) PIPE+=($genLogPipe);;
-                    PKG) PIPE+=($pkgLogPipe);;
-                    IMP) PIPE+=($impLogPipe);;
-                    ERR) PIPE+=($errLogPipe);;
+                    GEN) FDs+=($genLogFD);;
+                    PKG) FDs+=($pkgLogFD);;
+                    IMP) FDs+=($impLogFD);;
+                    ERR) FDs+=($errLogFD);;
                 esac
                 ((i++))
             done
             IFS='|'
             ;;
-        GEN) PIPE+=($genLogPipe);;
-        PKG) PIPE+=($pkgLogPipe);;
-        IMP) PIPE+=($impLogPipe);;
-        ERR) PIPE+=($errLogPipe);;
-        NULL|*) PIPE+=();;
+        GEN) FDs+=($genLogFD);;
+        PKG) FDs+=($pkgLogFD);;
+        IMP) FDs+=($impLogFD);;
+        ERR) FDs+=($errLogFD);;
+        NULL|*) FDs+=();;
     esac
 
+    ### Set color formatting
     case "${PARTS[1]}" in
         INFO)
             LEVEL=INFO
@@ -251,40 +242,46 @@ function log {
             ;;
     esac
 
+    
+    ### Append message provided by caller
     M="${PARTS[2]}"
     if [[ "$M" = "" ]]; then
         log "NULL|ERROR|Empty log message?!?!" t
     fi
 
-    MSG=$COLOR$M$MSGEND
+    MSG=$COLOR$LEVEL" - "$sdn":"$M$MSGEND ## Full message string
+
+    ### If $2 is set we also print to stdout.
     if [[ $2 ]]; then
-        if [[ ! $PIPE ]]; then
-            echo -e "NOPIPE -- "$MSG
+        if [[ ! $FDs ]]; then
+            echo -e "NO_DESTINATION -- "$MSG
             return
         fi
         i=0
         displayOnce=0
-        while [[ $i < ${#PIPE[@]} ]]; do
+        while [[ $i < ${#FDs[@]} ]]; do
             if [[ $displayOnce = 0 ]]; then
-                echo -e "${PIPE[$i]} -- "$MSG
-                displayOnce=1
+                echo -e "${FDs[$i]} -- "$MSG
+                displayOnce=1 ## Prevents repeat message to stdout when multiple destination are provided.
             fi
-            echo $M >> $pipeDir/${PIPE[$i]}
+            echo $M >&${FDs[$i]}
             ((i++))
         done
-        unset IFS PIPE TSO LEVEL COLOR MSG M MSGEND i
+        unset IFS FDs LEVEL COLOR MSG M MSGEND i
         return
     fi
-    if [[ ! $PIPE ]]; then
-        echo -e "NOPIPE -- "$MSG
+
+    ### $2 not set, we do not print to stdout
+    if [[ ! $FDs ]]; then
+        echo -e "NO_DESTINATION -- "$MSG
     fi
     i=0
-    while [[ $i < ${#PIPE[@]} ]]; do
-        echo -e "${PIPE[$i]} -- "$MSG
-        echo $M >> $pipeDir/${PIPE[$i]}
+    while [[ $i < ${#FDs[@]} ]]; do
+        echo -e "${FDs[$i]} -- "$MSG
+        echo $M >&${FDs[$i]}
         ((i++))
     done
-    unset IFS PIPE TSO LEVEL COLOR MSG M MSGEND i
+    unset IFS FDs LEVEL COLOR MSG M MSGEND i
 }
 
 ###
@@ -365,6 +362,7 @@ function loadPkg {
                         log "ERR|FATAL|Could not find $pkg after finding it????" true
                         return
                     fi
+                    break
                     ;;
             esac
         done
@@ -909,7 +907,6 @@ function evalPrompt {
                 log "GEN|INFO|Removing pkm lock." t
                 rm -v /var/run/pkm/pkm.lock
             fi
-            killall tail #Dirty!
             CURSTATE=1
             ;;
         ilsil)
@@ -951,7 +948,6 @@ log "NULL|INFO|Starting PKM" t
 readConfig
 log "NULL|INFO|Configuration loaded." t
 log "NULL|INFO|Starting log managers" t
-testPkm
 startLog
 log "NULL|INFO|Testing pkm installation." t
 
