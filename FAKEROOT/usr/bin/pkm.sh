@@ -148,11 +148,11 @@ function readConfig {
             pkgLog) pkgLogFile=${PARAM[1]};;
             errLog) errLogFile=${PARAM[1]};;
             impLog) impLogFile=${PARAM[1]};;
-            \#|\#\#|\#\#\#) log "NULL|INFO|COMMENT";;
-            *) log "NULL|WARNING|Unknown config param" t;;
+            "") continue;;
+            *) continue;;
         esac
         unset IFS
-    done < $configFile
+    done < $configFile >/dev/null
     export MAKEFLAGS
     log "NULL|INFO|Done reading log file." t
 }
