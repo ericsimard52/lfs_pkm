@@ -5,7 +5,7 @@ declare devBase="/home/tech/Git/lfs_pkm/FAKEROOT"
 declare sd td sdn sdnConf ext hasBuildDir buildDir confBase bypassImplement wgetUrl FAKEROOT
 declare unpackCmd
 declare MAKEFLAGS
-declare DBG_LVL=0 #Change to 1 to turn debug on.
+declare DEBUG=0 #Change to 1 to turn debug on.
 declare genLogFile pkgLogFile impLogFile errLogFile
 declare genLogFD pkgLogFD impLogFD errLogFD #File descriptor input only
 declare isImplemented=1 # This changes to 0 when implementation is done.
@@ -39,25 +39,26 @@ function importLfsScriptedImplementLogs {
 
 function startLog {
     if [ ! -f $genLogFile ]; then
-        log "NULL|INFO|Creating $genLogFile"
+        log "NULL|INFO|Creating $genLogFile" t
         > $genLogFile
         sudo chmod 666 -v $genLogFile
     fi
     if [ ! -f $pkgLogFile ]; then
-        log "NULL|INFO|Creating $pkgLogFile"
+        log "NULL|INFO|Creating $pkgLogFile" t
         > $pkgLogFile
         sudo chmod 666 -v $pkgLogFile
     fi
     if [ ! -f $impLogFile ]; then
-        log "NULL|INFO|Creating $impLogFile"
+        log "NULL|INFO|Creating $impLogFile" t
         > $impLogFile
         sudo chmod 666 -v $impLogFile
     fi
     if [ ! -f $errLogFile ]; then
-        log "NULL|INFO|Creating $errLogFile"
+        log "NULL|INFO|Creating $errLogFile" t
         > $errLogFile
         sudo chmod 666 -v $errLogFile
     fi
+    log "NULL|INFO|Creating file descriptor for logs" t t
     exec {genLogFD}>$genLogFile
     exec {pkgLogFD}>$pkgLogFile
     exec {impLogFD}>$impLogFile
@@ -88,7 +89,9 @@ function installManager {
     sudo install -vdm755 /usr/{bin,share/pkm}
     sudo install -g pkm -o pkm -vdm775 /var/{log/pkm,run/pkm,cache/pkm}
     sudo install -vdm755 /etc/pkm
-    sudo install -o pkm -g pkm -v -m 664 $FbaseDir/etc/pkm/pkm.conf /etc/pkm/pkm.conf
+    if [ ! -f /etc/pkm/pkm.conf ]; then
+        sudo install -o pkm -g pkm -v -m 664 $FbaseDir/etc/pkm/pkm.conf /etc/pkm/pkm.conf
+    fi
     sudo install -vm755 $FbaseDir/usr/bin/pkm.sh /usr/bin/pkm.sh
     log "GEN|INFO|Files are installed, changing some dev variable to production." t
     sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT\/etc\/pkm\/pkm.conf/\/etc\/pkm\/pkm.conf/g' /usr/bin/pkm.sh
@@ -136,25 +139,57 @@ function readConfig {
         return 1
     fi
     while read -r line; do
-        echo $line
         IFS=':' read -ra PARAM <<< "$line"
         case "${PARAM[0]}" in
-            sd) sd=${PARAM[1]};;
-            confBase) confBase=${PARAM[1]};;
-            MAKEFLAGS) MAKEFLAGS=${PARAM[1]};;
-            FAKEROOT) FAKEROOT=${PARAM[1]};;
-            bypassImplement) bypassImplement=${PARAM[1]};;
-            genLog) genLogFile=${PARAM[1]};;
-            pkgLog) pkgLogFile=${PARAM[1]};;
-            errLog) errLogFile=${PARAM[1]};;
-            impLog) impLogFile=${PARAM[1]};;
-            "") continue;;
+            debug)
+                DEBUG=${PARAM[1]}
+                if [ $DEBUG = 1 ];then
+                    log "NULL|INFO|Set param DEBUG:$DEBUG" t
+                fi
+                ;;
+            sd)
+                sd=${PARAM[1]}
+                log "NULL|INFO|Set param sd:$sd" t t
+                ;;
+            confBase)
+                confBase=${PARAM[1]}
+                log "NULL|INFO|Set param confBase:$confBase" t t
+                ;;
+            MAKEFLAGS)
+                MAKEFLAGS=${PARAM[1]}
+                log "NULL|INFO|Set param MAKEFLAGS:$MAKEFLAGS" t t
+                ;;
+            FAKEROOT)
+                FAKEROOT=${PARAM[1]}
+                log "NULL|INFO|Set param FAKEROOT:$FAKEROOT" t t
+                ;;
+            bypassImplement)
+                bypassImplement=${PARAM[1]}
+                log "NULL|INFO|Set param bypassImplement:$bypassImplement" t t
+                ;;
+            genLog)
+                genLogFile=${PARAM[1]}
+                log "NULL|INFO|Set param genLogFile:$genLogFile" t t
+                ;;
+            pkgLog)
+                pkgLogFile=${PARAM[1]}
+                log "NULL|INFO|Set param pkgLogFile:$pkgLogFile" t t
+                ;;
+            errLog)
+                errLogFile=${PARAM[1]}
+                log "NULL|INFO|Set param errLogFile:$errLogFile" t t
+                ;;
+            impLog)
+                impLogFile=${PARAM[1]}
+                log "NULL|INFO|Set param impLogFile:$impLogFile" t t
+                ;;
+            "#") continue;;
             *) continue;;
         esac
         unset IFS
-    done < $configFile >/dev/null
+    done < $configFile
     export MAKEFLAGS
-    log "NULL|INFO|Done reading log file." t
+    log "NULL|INFO|Done reading config file." t
 }
 
 function fetchPkg {
@@ -167,33 +202,31 @@ function fetchPkg {
     done < $configFile
 
     if [[ "$wgetUrl" = "" ]]; then
-       log "{GEN,ERR}|ERROR|No url provided. Adjust config file." t
-       return
+        log "{GEN,ERR}|ERROR|No url provided. Adjust config file." t
+        return
     fi
     wget $wgetUrl $sd/
 }
 
 ###
-# Params "PIPE:{INFO,WARNING,ERROR,FATAL}:MESSAGE" PRINTtoSTDOUT
-# When PIPE is set, the parameters sent through the pipe depends on the pipe.
-# When no PIPE is set, it will set to /dev/null
-# genLogPipe will receive :STARTLOG: to begin a log session
-#   Log format: LEVEL:MSG.
-# pkgLogPipe; This log contains all building logs from a given package.
-#   Start session :STARTLOG:PACKAGE
-#   Log format: LEVEL:MSG
-#   End session: :ENDLOG:PACKAGE
-# impLogPipe;
-#   Start session:  :STARTLOG:PACKAGE
-#   Log format: :ACTION:TYPE:FILE
-#   End session: :ENDLOG:PACKAGE
-# errLogPipe;
-#   Start session :STARTLOG:
-#   Log format: :LEVEL:MESSAGE
-#   End session: :ENDLOG:
+# Params "FDs|LEVEL|MESSAGE" PRINTtoSTDOUT DEBUGONLY
+# FDs define 1 or more file descriptor to send the message to. Possible option: GEN,PKG,IMP,ERR
+#
+# GEN for general log, this log is active when debug is off. Contains general message about progress and results
+# PKG Used to log details when debug is on. contains logs from fetching packages  up to installation.
+# IMP Used when debug is on to store details about the implementation process from preimplement to postimplement
+#     This does not store the information about where files are installed. Those are separate and always active.
+# ERR Used when debug is on to store details about the error
+# NOTE: More the 1 FD per call can be provided: log "{GEN,ERR}|...."
+# PRINTtoSTDOUT when set, also print the message to stdout
+#
+# DEBUGONLY When set instruct to process log only when debug is on.
 ###
 function log {
-    declare LEVEL COLOR MSG M
+    if [ $3 ] && [ $DEBUG = 0 ]; then
+        return
+    fi
+    declare LEVEL COLOR MSG M CALLER
     declare -a FDs # Array of file descriptor where messages needs to be redirected to.
     MSGEND="\e[0m" ## Clear all formatting
     IFS='|' read -ra PARTS <<< $1
@@ -242,14 +275,21 @@ function log {
             ;;
     esac
 
-    
     ### Append message provided by caller
     M="${PARTS[2]}"
     if [[ "$M" = "" ]]; then
         log "NULL|ERROR|Empty log message?!?!" t
     fi
 
-    MSG=$COLOR$LEVEL" - "$sdn":"$M$MSGEND ## Full message string
+    if [ $sdn ]; then
+        caller=$sdn
+    else
+        caller="NONE"
+    fi
+    MSG=$COLOR$LEVEL" - "$caller":"$M$MSGEND ## Full message string
+    if [ $DEBUG = 1 ] && [ $3 ]; then
+        MSG="\e[33mDEBUG\e[0m - "$MSG
+    fi
 
     ### If $2 is set we also print to stdout.
     if [[ $2 ]]; then
@@ -281,7 +321,7 @@ function log {
         echo $M >&${FDs[$i]}
         ((i++))
     done
-    unset IFS FDs LEVEL COLOR MSG M MSGEND i
+    unset IFS FDs LEVEL COLOR MSG M MSGEND i CALLER
 }
 
 ###
@@ -420,12 +460,12 @@ function loadPkg {
     fi
 
     ### Not needed with the new pipe logs.
-#    logDir="/var/log/pkm/$sdn"
-#    log "GEN|INFO|Checking log directorie: $ld" t
-#    if [ ! -d "$logDir" ]; then
-#        log "{GEN,ERR}|WARNING|Package log directory not found, creating." true
-#        mkdir $logDir
-#    fi
+    #    logDir="/var/log/pkm/$sdn"
+    #    log "GEN|INFO|Checking log directorie: $ld" t
+    #    if [ ! -d "$logDir" ]; then
+    #        log "{GEN,ERR}|WARNING|Package log directory not found, creating." true
+    #        mkdir $logDir
+    #    fi
 
     # Adjusting the unpack commands
     log "GEN|INFO|Adjusting unpack command." true
@@ -578,7 +618,12 @@ function implementPkg {
     fi
 
     log "{GEN,IMP}|INFO|Setting file in system" true
-    sudo su -c "tar cvf - . | (cd / ; tar vxf - ) | tee >> /var/cache/pkm/$sdn"
+    if [ $debug = 0 ]; then
+        sudo su -c "tar cf - . | (cd / ; tar xf - )"
+    else
+        sudo su -c "tar cvf - . | (cd / ; tar vxf - ) | tee >> /var/cache/pkm/$sdn"
+    fi
+    log "Done implementation." t
     popd > /dev/null 2>&1
 }
 
@@ -645,6 +690,34 @@ function setCmdFileList {
     )
 }
 
+function downloadPkg {
+    declare -a urls
+    done=0
+    log "GEN|INFO|Downloading packages, enter 1 url per line, finish with empty line." t
+    while [ $done -lt 1 ];do
+        read u
+        if [ "$u" = "" ];then
+            done=1
+            continue
+        fi
+        urls+=(${u})
+    done
+    x=0
+    pushd $sd >/dev/null
+    if [[ $? > 0 ]]; then
+        log "{GEN,ERR}|FATAL|Unable to pushd $sd" t
+        return
+    fi
+    while [ $x -lt ${#urls[@]} ]; do
+
+        wget ${urls[$x]}
+        ((x++))
+    done
+    popd
+    unset x urls done
+
+}
+
 ###
 # Preparation of a new package
 ###
@@ -652,7 +725,10 @@ function prepPkg {
     unloadPkg
     promptUser "Package name?"
     read -e pkg
-
+    if [ "$pkg" = "" ]; then
+        log "GEN|INFO|Empty package provided." t
+        return
+    fi
     # If we can't file the package (source tar), we do a search for the term provided by the user.
     if [ ! -f $sd/$pkg ]; then
         log "GEN|INFO|Package not found in $sd, searching for variants." true
@@ -678,7 +754,17 @@ function prepPkg {
         done
         if [ ! -f $sd/$pkg ]; then
             log "GEN|WARNING|No package found for $pkg*." true
-            return
+            promptUser "Do you want to download? Y/n"
+            read u
+            case $u in
+                [nN])
+                    return
+                    ;;
+                [yY]|*)
+                    downloadPkg
+                    return
+                    ;;
+            esac
         fi
 
     fi
@@ -749,6 +835,7 @@ function prepPkg {
     log "PKG|INFO|Configuration created." true
 
 }
+
 
 ###
 # List tasks to perform for the current package
@@ -903,6 +990,13 @@ function evalPrompt {
             ;;
         quit)
             log "GEN|INFO|Quitting"
+            exec {genLogFD}>&-
+            exec {pkgLogFD}>&-
+            exec {impLogFD}>&-
+            exec {errLogFD}>&-
+            unset genLogFile pkgLogFile impLogFile errLogFile
+            unset genLogFD pkgLogFD impLogFD errLogFD
+
             if [ -f /var/run/pkm/pkm.lock ]; then
                 log "GEN|INFO|Removing pkm lock." t
                 rm -v /var/run/pkm/pkm.lock
@@ -950,5 +1044,4 @@ log "NULL|INFO|Configuration loaded." t
 log "NULL|INFO|Starting log managers" t
 startLog
 log "NULL|INFO|Testing pkm installation." t
-
 prompt
