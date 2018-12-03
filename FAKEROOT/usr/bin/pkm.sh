@@ -2,10 +2,10 @@
 
 declare configFile="/root/LFS_Pkm/FAKEROOT/etc/pkm/pkm.conf"
 declare devBase="/home/tech/Git/lfs_pkm/FAKEROOT"
-declare sd td sdn sdnConf ext hasBuildDir buildDir confBase bypassImplement wgetUrl FAKEROOT
+declare sd td sdn sdnConf pkg ext hasBuildDir buildDir confBase bypassImplement wgetUrl FAKEROOT
 declare unpackCmd
 declare MAKEFLAGS
-declare DEBUG=0 #Change to 1 to turn debug on.
+declare DEBUG=0 # 0=OFF, 1= ON, but not to stdout, send all debug to log file. 2= send to stdout and logfile
 declare genLogFile pkgLogFile impLogFile errLogFile
 declare genLogFD pkgLogFD impLogFD errLogFD #File descriptor input only
 declare isImplemented=1 # This changes to 0 when implementation is done.
@@ -41,22 +41,22 @@ function startLog {
     if [ ! -f $genLogFile ]; then
         log "NULL|INFO|Creating $genLogFile" t
         > $genLogFile
-        sudo chmod 666 -v $genLogFile
+        chmod 666 -v $genLogFile
     fi
     if [ ! -f $pkgLogFile ]; then
         log "NULL|INFO|Creating $pkgLogFile" t
         > $pkgLogFile
-        sudo chmod 666 -v $pkgLogFile
+        chmod 666 -v $pkgLogFile
     fi
     if [ ! -f $impLogFile ]; then
         log "NULL|INFO|Creating $impLogFile" t
         > $impLogFile
-        sudo chmod 666 -v $impLogFile
+        chmod 666 -v $impLogFile
     fi
     if [ ! -f $errLogFile ]; then
         log "NULL|INFO|Creating $errLogFile" t
         > $errLogFile
-        sudo chmod 666 -v $errLogFile
+        chmod 666 -v $errLogFile
     fi
     log "NULL|INFO|Creating file descriptor for logs" t t
     exec {genLogFD}>$genLogFile
@@ -86,47 +86,45 @@ function installManager {
     fi
 
     log "GEN|INFO|Installing pkm." t
-    sudo install -vdm755 /usr/{bin,share/pkm}
-    sudo install -g pkm -o pkm -vdm775 /var/{log/pkm,run/pkm,cache/pkm}
-    sudo install -vdm755 /etc/pkm
+    install -g pkm -o pkm -vdm755 /usr/{bin,share/pkm}
+    install -g pkm -o pkm -vdm775 /var/{log/pkm,run/pkm,cache/pkm}
+    install -g pkm -o pkm -vdm775 /etc/pkm/templates
+    install -g pkm -o pkm $FbaseDir/etc/pkm/templates/* /etc/pkm/templates
     if [ ! -f /etc/pkm/pkm.conf ]; then
-        sudo install -o pkm -g pkm -v -m 664 $FbaseDir/etc/pkm/pkm.conf /etc/pkm/pkm.conf
+        install -o pkm -g pkm -v -m 664 $FbaseDir/etc/pkm/pkm.conf /etc/pkm/pkm.conf
     fi
-    sudo install -vm755 $FbaseDir/usr/bin/pkm.sh /usr/bin/pkm.sh
+    install -vm755 $FbaseDir/usr/bin/pkm.sh /usr/bin/pkm.sh
     log "GEN|INFO|Files are installed, changing some dev variable to production." t
-    sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT\/etc\/pkm\/pkm.conf/\/etc\/pkm\/pkm.conf/g' /usr/bin/pkm.sh
-    sudo sed -i 's/\/root\/LFS_Pkm\/FAKEROOT//g' /etc/pkm/pkm.conf
+    sed -i 's/\/root\/LFS_Pkm\/FAKEROOT\/etc\/pkm\/pkm.conf/\/etc\/pkm\/pkm.conf/g' /usr/bin/pkm.sh
+    sed -i 's/\/root\/LFS_Pkm\/FAKEROOT//g' /etc/pkm/pkm.conf
 
     log "NULL|INFO|Don't forget to add your normal user account to the pkm group."
-
 }
 
 ###
 # Dump environment variable
 ###
 function dumpEnv {
-    echo "GEN:INFO:Environment Var:
-buildTmpMode: $buildTmpMode
-sd: $sd
-tf: $tf
-sdnConf: $sdnConf
-ext: $ext
-hasBuildDir: $hasBuildDir
-MAKEFLAGS: $MAKEFLAGS
-buildDir: $buildDir
-LFS: $LFS
-configFile: $configFile
-confBase: $confBase
-genLog: $genLogFile
-genLogFD: $genLogFD
-pkgLog: $pkgLogFile
-pkgLogFD: $pkgLogFD
-impLog: $impLogFile
-impLogFD: $impLogFD
-errLog: $errLogFile
-errLogFD: $errLogFD
-"
-
+    printf "\e[1mEnvironment Var:\e[0m
+\e[34mDEBUG: \e[32m$DEBUG
+\e[34msd: \e[32m$sd
+\e[34mtf: \e[32m$tf
+\e[34msdnConf: \e[32m$sdnConf
+\e[34mext: \e[32m$ext
+\e[34mhasBuildDir: \e[32m$hasBuildDir
+\e[34mMAKEFLAGS: \e[32m$MAKEFLAGS
+\e[34mbuildDir: \e[32m$buildDir
+\e[34mLFS: \e[32m$LFS
+\e[34mconfigFile: \e[32m$configFile
+\e[34mconfBase: \e[32m$confBase
+\e[34mgenLog: \e[32m$genLogFile
+\e[34mgenLogFD: \e[32m$genLogFD
+\e[34mpkgLog: \e[32m$pkgLogFile
+\e[34mpkgLogFD: \e[32m$pkgLogFD
+\e[34mimpLog: \e[32m$impLogFile
+\e[34mimpLogFD: \e[32m$impLogFD
+\e[34merrLog: \e[32m$errLogFile
+\e[34merrLogFD: \e[32m$errLogFD\e[0m\n"
 }
 
 ###
@@ -143,7 +141,7 @@ function readConfig {
         case "${PARAM[0]}" in
             debug)
                 DEBUG=${PARAM[1]}
-                if [ $DEBUG = 1 ];then
+                if [[ $DEBUG > 0 ]];then
                     log "NULL|INFO|Set param DEBUG:$DEBUG" t
                 fi
                 ;;
@@ -192,6 +190,21 @@ function readConfig {
     log "NULL|INFO|Done reading config file." t
 }
 
+function processCmd {
+    local cmd
+    if [[ $DEBUG = 0 ]]; then
+        cmd="$1 2>&1 >/dev/null"
+    elif [[ $DEBUG = 1 ]]; then
+        cmd="$1 2>&${errLogFD} >&${pkgLogFD}"
+    else
+        cmd="$1 > >(tee >(cat - >&${pkgLogFD})) 2> >(tee >(cat - >&${errLogFD}) >&2)"
+
+    fi
+    log "GEN|INFO|Processing command: $cmd" t
+    eval $cmd
+    log "GEN|INFO|Done processing." t t
+    return $?
+}
 function fetchPkg {
     while read -r line; do
         echo $line
@@ -282,12 +295,15 @@ function log {
     fi
 
     if [ $sdn ]; then
-        caller=$sdn
+        caller="\e[32m"$pkg"\e[0m "
+        callerLog=$pkg
     else
-        caller="NONE"
+        callerLog="NONE"
+        caller="\e[32mNONE\e[0m "
     fi
-    MSG=$COLOR$LEVEL" - "$caller":"$M$MSGEND ## Full message string
-    if [ $DEBUG = 1 ] && [ $3 ]; then
+    MSG=$COLOR$LEVEL" - "$caller":"$COLOR$M$MSGEND ## Full message string
+    LOGMSG=$LEVEL" - "$callerLog":"$M
+    if [[ $DEBUG > 0 ]] && [ $3 ]; then
         MSG="\e[33mDEBUG\e[0m - "$MSG
     fi
 
@@ -304,7 +320,7 @@ function log {
                 echo -e "${FDs[$i]} -- "$MSG
                 displayOnce=1 ## Prevents repeat message to stdout when multiple destination are provided.
             fi
-            echo $M >&${FDs[$i]}
+            echo $LOGMSG >&${FDs[$i]}
             ((i++))
         done
         unset IFS FDs LEVEL COLOR MSG M MSGEND i
@@ -318,7 +334,7 @@ function log {
     i=0
     while [[ $i < ${#FDs[@]} ]]; do
         echo -e "${FDs[$i]} -- "$MSG
-        echo $M >&${FDs[$i]}
+        echo $LOGMSG >&${FDs[$i]}
         ((i++))
     done
     unset IFS FDs LEVEL COLOR MSG M MSGEND i CALLER
@@ -374,6 +390,48 @@ function promptUser {
     echo -en $COLOR$1" : \e[0m"
 }
 
+function checkInstalled {
+    command -v $1 > /dev/null
+    if [[ $? > 0 ]]; then
+        log "{GEN,PKG,ERR}|ERROR|$1 is not installed but is required by $pkg" t
+        return 1
+    fi
+    return 0
+}
+
+function checkVersion {
+    reqCmd=$1
+    reqVer=$2
+    cmdVersion=`$1 --version |head -n1 | egrep -o "([0-9]{1,}\.)+[0-9]{1,}"`
+    vercomp $cmdVersion $reqVer
+    return $?
+}
+
+function vercomp {
+    if [[ $1 == $2 ]]; then
+        return 0
+    fi
+    local IFS=.
+    local i installedVer=($1) neededVer=($2)
+    for ((i=${#installedVer[@]}; i<${#neededVer[@]}; i++));do
+        installedVer[i]=0
+    done
+    for ((i=0; i<${#installedVer[@]}; i++)); do
+        if [[ -z ${neededVer[i]} ]]; then
+            neededVer[i]=0
+        fi
+        if ((${installedVer[i]} > ${neededVer[i]})); then
+            return 0
+        fi
+        if ((${installedVer[i]} < ${neededVer[i]})); then
+            return 1
+        fi
+    done
+    log "{GEN,ERR}|FATAL|Should not reach this point in vercomp. Unable to ensure proper version is installed." t
+    return 0
+}
+
+
 function loadPkg {
     if [[ ! "$pkg" == "" ]]; then
         log "GEN|INFO|Unloading previous package from memory." true
@@ -386,7 +444,6 @@ function loadPkg {
         return
     fi
     if [ ! -d $confBase/$pkg ]; then
-        log "ERR|ERROR|Configuration not found for $pkg"
         declare -a foundFiles
         for file in `find $confBase -maxdepth 1 -type d -iname "$pkg*"`; do
             promptUser "FoundFiles: $file\n Use it? Y/n"
@@ -437,6 +494,7 @@ function loadPkg {
                 done
                 IFS=':'
                 ;;
+            DEBUG) DEBUG=${PARAM[1]};;
             *) log "{GEN,ERR}|ERROR|Unknow params: ${PARAMS[1]}" t;;
         esac
         unset IFS
@@ -455,6 +513,11 @@ function loadPkg {
     setCmdFileList
     if [ $hasBuildDir -lt 1 ]; then
         buildDir=$sd/$sdn/build
+        log "GEN|INFO|Checking if build dir: $buildDir exists." t t
+        if [ ! -d "$builDir" ]; then
+            log "GEN|WARNING|Build directory flag set, but dir does not exist, creating..." t t
+            install -vdm755 $buildDir
+        fi
     else
         buildDir=$sd/$sdn
     fi
@@ -491,7 +554,6 @@ function loadPkg {
 function unloadPkg {
     unset -v pkg sdnConf tf sdn hasBuildDir buildDir ld ext unpackCmd banner genConfigFile preconfigCmdFile configCmdFile compileCmdFile checkCmdFile preInstallCmdFile installCmdFile preImplementCmdFile postImplementCmdFile cmdFileList preconfigCmd configCmd compileCmd checkCmd preInstallCmd installCmd preImplementCmd postImplementCmd autoInstallCmdList
     isImplemented=1
-    readConfig
 }
 
 ###
@@ -512,13 +574,13 @@ function unpack {
         log "{GEN,PKG,ERR}|FATAL|pushd to $sd failed." true
         return 2
     fi
-
-    eval $unpackCmd
+    processCmd "${unpackCmd}"
     if [ $hasBuildDir == 0 ]; then
         log "PKG|INFO|Creating build directory" true
-        mkdir -v $sd/$sdn/build
+        processCmd "install -opkm -gpkm -vdm755 $sd/$sdn/build"
     fi
 
+    log "{GEN,PKG}|INFO|Done." t
     popd > /dev/null 2>&1
 }
 
@@ -613,16 +675,12 @@ function sourceScript {
 function implementPkg {
     pushd $FAKEROOT/$sdn > /dev/null
     if [[ $? > 0 ]]; then
-        log "{GEN,ERR}|FATAL|pushd to $FAKEROOT/$sdn failed." true
+        log "{GEN,ERR}|FATAL|pushd to $FAKEROOT/$sdn failed." t
         exit 1
     fi
 
-    log "{GEN,IMP}|INFO|Setting file in system" true
-    if [ $debug = 0 ]; then
-        sudo su -c "tar cf - . | (cd / ; tar xf - )"
-    else
-        sudo su -c "tar cvf - . | (cd / ; tar vxf - ) | tee >> /var/cache/pkm/$sdn"
-    fi
+    log "{GEN,IMP}|INFO|Setting file in system" t
+    processCmd "sudo su -c \"tar cf - . | (cd / ; tar xvf - )\""
     log "Done implementation." t
     popd > /dev/null 2>&1
 }
@@ -631,14 +689,14 @@ function implementPkg {
 # Cleanup after package source and fakeroot directories
 ###
 function cleanup {
-    log "GEN|INFO|Cleaning up source file" true
+    log "GEN|INFO|Cleaning up source file" t
     pushd $sd > /dev/null
     if [[ $? > 0 ]]; then
-        log "{GEN,ERR}|FATAL|pushd to $sd failed." true
+        log "{GEN,ERR}|FATAL|pushd to $sd failed." t
         exit 1
     fi
 
-    sudo rm -fr $sdn
+    rm -fr $sdn
     popd > /dev/null 2>&1
 
     promptUser "Remove Fakeroot Files? Y/n"
@@ -649,7 +707,7 @@ function cleanup {
             ;;
         [yY]|*)
             log "GEN|INFO|Removing fakeroot." true
-            sudo rm -fr $FAKEROOT/$sdn
+            rm -fr $FAKEROOT/$sdn
             log "GEN|INFO|Done." t
             ;;
     esac
@@ -663,11 +721,11 @@ function setCmdFileList {
     log "GEN|INFO|Setting up command files list." true
     if [ "$sdn" == "" ]; then
         log "{GEN,ERR}|ERROR|sdn is not set." true
-        return
+        return 1
     fi
     if [ "$sdnConf" == "" ]; then
         log "{GEN,ERR}|ERROR|sdnConf not set." true
-        return
+        return 1
     fi
 
     preconfigCmdFile=$sdnConf/preconfig
@@ -688,6 +746,7 @@ function setCmdFileList {
         $preImplementCmdFile
         $postImplementCmdFile
     )
+    return 0
 }
 
 function downloadPkg {
@@ -703,104 +762,71 @@ function downloadPkg {
         urls+=(${u})
     done
     x=0
-    pushd $sd >/dev/null
+    pushd /tmp >/dev/null
     if [[ $? > 0 ]]; then
         log "{GEN,ERR}|FATAL|Unable to pushd $sd" t
         return
     fi
     while [ $x -lt ${#urls[@]} ]; do
-
         wget ${urls[$x]}
         ((x++))
     done
     popd
     unset x urls done
-
 }
 
-###
-# Preparation of a new package
-###
-function prepPkg {
-    unloadPkg
-    promptUser "Package name?"
-    read -e pkg
-    if [ "$pkg" = "" ]; then
-        log "GEN|INFO|Empty package provided." t
+function searchPkg {
+    # If we can't file the package (source tar), we do a search for the term provided by the user.
+    declare -a foundFiles
+    for file in `find $sd -maxdepth 1 -type f -iname "$1*"`; do
+        promptUser "FoundFiles: $file\n Use it? Y/n"
+        read u
+        case $u in
+            [nN])
+                continue
+                ;;
+            [yY]|*)
+                log "GEN|INFO|Using: $file" true
+                pkg=$(basename $file)
+                log "{GEN,PKG}|INFO|pkg set to $pkg" t t
+                if [ ! -f $sd/$pkg ]; then
+                    log "{GEN,ERR}|FATAL|Could not find $pkg after finding it????" true
+                    return
+                fi
+                break
+                ;;
+        esac
+    done
+    if [ ! -f $sd/$pkg ]; then
+        log "GEN|WARNING|No package found for $pkg*." true
+        promptUser "Do you want to download? Y/n"
+        read u
+        case $u in
+            [nN])
+                pkg="NA"
+                return
+                ;;
+            [yY]|*)
+                downloadPkg
+                pkg="NA"
+                return
+                ;;
+        esac
+    fi
+}
+
+function createSkeleton {
+    if [ -d $sdnConf ]; then
+        log "GEN|WARNING|Config Directory exists. Previous configuration file will be left intact." t
         return
     fi
-    # If we can't file the package (source tar), we do a search for the term provided by the user.
-    if [ ! -f $sd/$pkg ]; then
-        log "GEN|INFO|Package not found in $sd, searching for variants." true
+    install -vdm755 $sdnConf
 
-        declare -a foundFiles
-        for file in `find $sd -maxdepth 1 -type f -iname "$pkg*"`; do
-            promptUser "FoundFiles: $file\n Use it? Y/n"
-            read u
-            case $u in
-                [nN])
-                    continue
-                    ;;
-                [yY]|*)
-                    log "GEN|INFO|Using: $file" true
-                    pkg=$(basename $file)
-                    if [ ! -f $sd/$pkg ]; then
-                        log "{GEN,ERR}|FATAL|Could not find $pkg after finding it????" true
-                        return
-                    fi
-                    break
-                    ;;
-            esac
-        done
-        if [ ! -f $sd/$pkg ]; then
-            log "GEN|WARNING|No package found for $pkg*." true
-            promptUser "Do you want to download? Y/n"
-            read u
-            case $u in
-                [nN])
-                    return
-                    ;;
-                [yY]|*)
-                    downloadPkg
-                    return
-                    ;;
-            esac
-        fi
-
-    fi
-    tf=$pkg
-    sdn="${tf%.tar.*}" # Get the filename
-    promptUser "sdn: $sdn, is that correct? Y/n"
-    read us
-    case $us in
-        [nN])
-            promptUser "Enter correct sdn."
-            read sdn
-            ;;
-        [yY]|*)
-            log "NULL|INFO|Thank you." t
-            ;;
-    esac
-    sdnConf="$confBase/$sdn"
-    setCmdFileList
-
-    if [ -d $sdnConf ]; then
-        log "GEN|WARNING|Config Directory exists. Previous configuration file will be left intact." true
-    else
-        md="sudo mkdir -vp $sdnConf/"
-        log "GEN|INFO|Creating package configuration directory: $md" true
-        eval $md
-        if [[ $? > 0 ]]; then
-            evalError $cmd
-            return
-        fi
-        log "PKG|INFO|$sdnConf created" true
-    fi
     echo -n "Does the package requires a build directory? y/N "
     read d
     case $d in
         [yY])
-            log "PKG|INFO|Adjusting script config for build directory" true
+            log "GEN|INFO|Adjusting script config for build directory" t
             buildDir="$sd/$sdn/build"
             hasBuildDir=0
             ;;
@@ -810,30 +836,48 @@ function prepPkg {
             ;;
     esac
 
-    log "PKG|INFO|Creating general config file with default values." true
-    tconf="tf:$tf\nsdn:$sdn\nhasBuildDir:$hasBuildDir\nbypassImplement:1\ntasks:unpack,implement,cleanup\nwgetUrl:"
+    log "GEN|INFO|Creating general config file with default values." t
+    tconf="tf:$tf\nsdn:$sdn\nhasBuildDir:$hasBuildDir\nbypassImplement:1\ntasks:unpack,implement,cleanup"
     genConfigFile="$sdnConf/$sdn.conf"
-    sudo touch $genConfigFile
-    sudo chmod 666 $genConfigFile
-    sudo echo -e $tconf > "${genConfigFile}"
+    touch $genConfigFile
+    chmod 666 -v $genConfigFile
+    sudo chown -v pkm:pkm $genConfigFile
+    echo -e $tconf > "${genConfigFile}"
 
     cmdArrLen=${#cmdFileList[@]}
-    log "PKG|INFO|Installing configuration files." true
-    t=0
-    while [ $t -lt $cmdArrLen ]; do
-        fn=${cmdFileList[$t]}
-        if [ -f $fn ]; then
-            log "PKG|WARNING|Old config file present." true
-        else
-            log "PKG|INFO|Creating $fn"
-            tc="sudo touch $fn && sudo chmod 755 $fn"
-            eval $tc
-        fi
-        ((t++))
-    done
+    log "GEN|INFO|Installing configuration files." t
+    install -g pkm -o pkm -m664 -v $confBase/templates/* $sdnConf/
+    log "GEN|INFO|Done." t
 
-    log "PKG|INFO|Configuration created." true
+}
 
+###
+# Preparation of a new package
+###
+function prepPkg {
+    unloadPkg
+    promptUser "Package name?"
+    read -e inputPkg
+    if [ "$inputPkg" = "" ]; then
+        log "GEN|INFO|Empty package provided." t
+        return
+    fi
+    searchPkg $inputPkg
+    if [ "$pkg" = "NA" ]; then
+        return
+    fi
+    tf=$pkg
+    sdn=`tar -tf $sd/$tf |egrep '^[^/]+/?$'`
+    sdn="${sdn::-1}"
+    log "GEN|INFO|snd set to: $sdn" t t
+    sdnConf="$confBase/$sdn"
+    log "GEN|INFO|sdnConf set to: $sdnConf" t t
+    setCmdFileList
+    if [[ $? > 0 ]]; then
+        log "{GEN,ERR}|ERROR|setCmdFileList returned 1 unable to continue." t t
+        return 1
+    fi
+    createSkeleton
 }
 
 
@@ -879,7 +923,7 @@ function evalPrompt {
             ;;
         config)
             log "GEN|INFO|Running config scripts" true
-            pushd $buildDir
+            pushd $buildDir > /dev/null
             if [[ $? > 0 ]]; then
                 log "ERR|FATAL|pushd to $buildDir failed." true
                 return 1
@@ -979,11 +1023,17 @@ function evalPrompt {
         installpkm)
             installManager
             ;;
+        downloadpkg)
+            downloadPkg
+            ;;
         dumpenv)
             dumpEnv
             ;;
         switchmode)
             switchMode
+            ;;
+        debug)
+            DEBUG=$2
             ;;
         reload)
             readConfig
@@ -1043,5 +1093,4 @@ readConfig
 log "NULL|INFO|Configuration loaded." t
 log "NULL|INFO|Starting log managers" t
 startLog
-log "NULL|INFO|Testing pkm installation." t
 prompt
