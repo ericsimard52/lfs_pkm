@@ -13,7 +13,7 @@ declare CURSTATE=0 # Set to 1 to exit program succesfully
 
 
 # Config files
-declare genConfigFile preconfigCmdFile configCmdFile compileCmdFile checkCmdFile
+declare genConfigFile depcheckCmdFile preconfigCmdFile configCmdFile compileCmdFile checkCmdFile
 declare preInstallCmdFile installCmdFile preImplementCmdFile postImplementCmdFile
 declare -a cmdFileList
 declare -a autoInstallCmdList
@@ -26,13 +26,13 @@ function singleton {
         log "NULL|FATAL|Pkm is already running or has not quit properly, in that case, remove /var/run/pkm/pkm.lock" t
         return
     fi
-    touch /var/run/pkm/pkm.lock
+    sudo -u pkm touch /var/run/pkm/pkm.lock
 }
 
 function importLfsScriptedImplementLogs {
     pushd /var/log/pkm
     for file in `find . -name *implement*`; do
-        cp -v $file /var/cache/pkm/
+        sudo -u pkm cp -v $file /var/cache/pkm/
     done
     popd
 }
@@ -40,23 +40,23 @@ function importLfsScriptedImplementLogs {
 function startLog {
     if [ ! -f $genLogFile ]; then
         log "NULL|INFO|Creating $genLogFile" t
-        > $genLogFile
-        chmod 666 -v $genLogFile
+        sudo -u pkm touch $genLogFile
+        sudo -u pkm chmod 666 -v $genLogFile
     fi
     if [ ! -f $pkgLogFile ]; then
         log "NULL|INFO|Creating $pkgLogFile" t
-        > $pkgLogFile
-        chmod 666 -v $pkgLogFile
+        sudo -u pkm touch $pkgLogFile
+        sudo -u pkm chmod 666 -v $pkgLogFile
     fi
     if [ ! -f $impLogFile ]; then
         log "NULL|INFO|Creating $impLogFile" t
-        > $impLogFile
-        chmod 666 -v $impLogFile
+        sudo -u pkm touch $impLogFile
+        sudo -u pkm chmod 666 -v $impLogFile
     fi
     if [ ! -f $errLogFile ]; then
         log "NULL|INFO|Creating $errLogFile" t
-        > $errLogFile
-        chmod 666 -v $errLogFile
+        sudo -u pkm touch $errLogFile
+        sudo -u pkm chmod 666 -v $errLogFile
     fi
     log "NULL|INFO|Creating file descriptor for logs" t t
     exec {genLogFD}>$genLogFile
@@ -89,7 +89,7 @@ function installManager {
     install -g pkm -o pkm -vdm755 /usr/{bin,share/pkm}
     install -g pkm -o pkm -vdm775 /var/{log/pkm,run/pkm,cache/pkm}
     install -g pkm -o pkm -vdm775 /etc/pkm/templates
-    install -g pkm -o pkm $FbaseDir/etc/pkm/templates/* /etc/pkm/templates
+    install -g pkm -o pkm -m664 $FbaseDir/etc/pkm/templates/* /etc/pkm/templates
     if [ ! -f /etc/pkm/pkm.conf ]; then
         install -o pkm -g pkm -v -m 664 $FbaseDir/etc/pkm/pkm.conf /etc/pkm/pkm.conf
     fi
@@ -108,6 +108,7 @@ function dumpEnv {
     printf "\e[1mEnvironment Var:\e[0m
 \e[34mDEBUG: \e[32m$DEBUG
 \e[34msd: \e[32m$sd
+\e[34msdn: \e[32m$sdn
 \e[34mtf: \e[32m$tf
 \e[34msdnConf: \e[32m$sdnConf
 \e[34mext: \e[32m$ext
@@ -192,19 +193,17 @@ function readConfig {
 
 function processCmd {
     local cmd
+    log "GEN|INFO|Processing command: $1" t t
     if [[ $DEBUG = 0 ]]; then
-        cmd="$1 2>&1 >/dev/null"
+        $1 2>&1 >/dev/null
     elif [[ $DEBUG = 1 ]]; then
-        cmd="$1 2>&${errLogFD} >&${pkgLogFD}"
+        $1 >&${pkgLogFD} 2>&${errLogFD}
     else
-        cmd="$1 > >(tee >(cat - >&${pkgLogFD})) 2> >(tee >(cat - >&${errLogFD}) >&2)"
-
+        $1 > >(tee >(cat - >&${pkgLogFD})) 2> >(tee >(cat - >&${errLogFD}) >&2)
     fi
-    log "GEN|INFO|Processing command: $cmd" t
-    eval $cmd
-    log "GEN|INFO|Done processing." t t
     return $?
 }
+
 function fetchPkg {
     while read -r line; do
         echo $line
@@ -280,11 +279,11 @@ function log {
             ;;
         ERROR)
             LEVEL=ERROR
-            COLOR="\e[91m"
+            COLOR="\e[31m"
             ;;
         FATAL)
             LEVEL=FATAL
-            COLOR="\e[91m"
+            COLOR="\e[31m"
             ;;
     esac
 
@@ -391,9 +390,19 @@ function promptUser {
 }
 
 function checkInstalled {
-    command -v $1 > /dev/null
+    processCmd "command -v $1"
     if [[ $? > 0 ]]; then
-        log "{GEN,PKG,ERR}|ERROR|$1 is not installed but is required by $pkg" t
+        processCmd "locate $1"
+        if [[ $? > 0 ]]; then
+            return 1
+        fi
+    fi
+    return 0
+}
+
+function checkLibInstalled {
+    sudo -u pkm sudo ldconfig -p | grep $1
+    if [[ $? > 0 ]]; then
         return 1
     fi
     return 0
@@ -403,6 +412,13 @@ function checkVersion {
     reqCmd=$1
     reqVer=$2
     cmdVersion=`$1 --version |head -n1 | egrep -o "([0-9]{1,}\.)+[0-9]{1,}"`
+    if [[ $? > 0 ]]; then
+        log "PKG|WARNING|Unable to fetch version, attempting another way." t t
+        cmdVersion=`$1 -version |head -n1 | egrep -o "([0-9]{1,}\.)+[0-9]{1,}"`
+        log "PKG|ERROR|Could not find version for $1." t
+        return 1
+    fi
+    log "PKG|INFO|Found version: $cmdVersion." t t
     vercomp $cmdVersion $reqVer
     return $?
 }
@@ -453,7 +469,7 @@ function loadPkg {
                     continue
                     ;;
                 [yY]|*)
-                    log "GEN|INFO|Using: $file" true
+                    log "GEN|INFO|Using: $file" t
                     pkg=$(basename $file)
                     if [ ! -d $confBase/$pkg ]; then
                         log "ERR|FATAL|Could not find $pkg after finding it????" true
@@ -469,7 +485,9 @@ function loadPkg {
         fi
     fi
     sdnConf=$confBase/$pkg
+    log "PKG|INFO|sdnConf set: $sdnConf." t t
     genConfigFile="$sdnConf/$pkg.conf"
+    log "PKG|INFO|genConfigFile set: $genConfigFile." t t
     if [ ! -f $genConfigFile ]; then
         log "ERR|ERROR|Package general config file missing" t
         return
@@ -479,16 +497,32 @@ function loadPkg {
     while read -r line; do
         IFS=':' read -ra PARAM <<< "$line"
         case "${PARAM[0]}" in
-            tf) tf=${PARAM[1]};;
-            sdn) sdn=${PARAM[1]};;
-            sd) sd=${PARAM[1]};;
-            hasBuildDir) hasBuildDir=${PARAM[1]};;
-            bypassImplement) bypassImplement=${PARAM[1]};;
-            wgetUrl) wgetUrl=${PARAM[1]};;
+            tf)
+                log "PKG|INFO|tf: ${PARAM[1]}" t t
+                tf=${PARAM[1]}
+                ;;
+            sdn)
+                log "PKG|INFO|sdn: ${PARAM[1]}" t t
+                sdn=${PARAM[1]}
+                ;;
+            sd)
+                log "PKG|INFO|sd: ${PARAM[1]}" t t
+                sd=${PARAM[1]}
+                ;;
+            hasBuildDir)
+                log "PKG|INFO|hasBuildDir: ${PARAM[1]}" t t
+                hasBuildDir=${PARAM[1]}
+                ;;
+            bypassImplement)
+                log "PKG|INFO|bypassImplement: ${PARAM[1]}" t t
+                bypassImplement=${PARAM[1]}
+                ;;
             tasks)
+                log "PKG|INFO|Loading tasks list." t t
                 IFS=',' read -ra TASK <<< "${PARAM[1]}"
                 x=0
                 while [[ $x < ${#TASK[@]} ]]; do
+                    log "PKG|INFO|Adding ${TASK[$x]}." t t
                     autoInstallCmdList+=(${TASK[$x]})
                     ((x++))
                 done
@@ -509,7 +543,8 @@ function loadPkg {
     fi
 
     ext="${tf##*.}"
-    sdnConf="$confBase/$sdn"
+    log "PKG|INFO|Extension established: $ext" t t
+    log "PKG|INFO|Calling setCmdFileList." t t
     setCmdFileList
     if [ $hasBuildDir -lt 1 ]; then
         buildDir=$sd/$sdn/build
@@ -521,7 +556,7 @@ function loadPkg {
     else
         buildDir=$sd/$sdn
     fi
-
+    log "PKG|INFO|buildDir set: $buildDir." t t
     ### Not needed with the new pipe logs.
     #    logDir="/var/log/pkm/$sdn"
     #    log "GEN|INFO|Checking log directorie: $ld" t
@@ -531,7 +566,7 @@ function loadPkg {
     #    fi
 
     # Adjusting the unpack commands
-    log "GEN|INFO|Adjusting unpack command." true
+    log "GEN|INFO|Adjusting unpack command." t
     if [[ "$ext" == "xz" ]]; then
         unpackCmd="tar xvf $tf"
     elif [[ "$ext" == "gz" ]]; then
@@ -546,13 +581,14 @@ function loadPkg {
         log "ERR|FATAL|Unknown package unpack method." true
         return
     fi
+    log "PKG|INFO|unpackCmd set: $unpackCmd." t t
 }
 
 ###
 # Unload package from memory, reset environment variable to their default and call readConfig to reload configuration.
 ###
 function unloadPkg {
-    unset -v pkg sdnConf tf sdn hasBuildDir buildDir ld ext unpackCmd banner genConfigFile preconfigCmdFile configCmdFile compileCmdFile checkCmdFile preInstallCmdFile installCmdFile preImplementCmdFile postImplementCmdFile cmdFileList preconfigCmd configCmd compileCmd checkCmd preInstallCmd installCmd preImplementCmd postImplementCmd autoInstallCmdList
+    unset -v pkg sdnConf tf sdn hasBuildDir buildDir ld ext unpackCmd banner genConfigFile depcheckCmdFile preconfigCmdFile configCmdFile compileCmdFile checkCmdFile preInstallCmdFile installCmdFile preImplementCmdFile postImplementCmdFile cmdFileList preconfigCmd configCmd compileCmd checkCmd preInstallCmd installCmd preImplementCmd postImplementCmd autoInstallCmdList
     isImplemented=1
 }
 
@@ -662,10 +698,10 @@ function runAutoInstall {
 ###
 function sourceScript {
     c=$1
-    log "GEN|INFO|Sourcing: $c" true
+    log "GEN|INFO|Sourcing: $c" t t
     source $c
     res=$?
-    log "GEN|INFO|Sourced $c returned: $res" true
+    log "GEN|INFO|Sourced $c returned: $res" t t
     return $res
 }
 
@@ -719,7 +755,7 @@ function cleanup {
 ###
 function setCmdFileList {
     log "GEN|INFO|Setting up command files list." true
-    if [ "$sdn" == "" ]; then
+    if [[ "$sdn" = "" ]]; then
         log "{GEN,ERR}|ERROR|sdn is not set." true
         return 1
     fi
@@ -728,6 +764,7 @@ function setCmdFileList {
         return 1
     fi
 
+    depcheckCmdFile=$sdnConf/depcheck
     preconfigCmdFile=$sdnConf/preconfig
     configCmdFile=$sdnConf/config
     compileCmdFile=$sdnConf/compile
@@ -737,6 +774,7 @@ function setCmdFileList {
     preImplementCmdFile=$sdnConf/preimplement
     postImplementCmdFile=$sdnConf/postimplement
     cmdFileList=(
+        $depcheckCmdFile
         $preconfigCmdFile
         $configCmdFile
         $compileCmdFile
@@ -767,8 +805,10 @@ function downloadPkg {
         log "{GEN,ERR}|FATAL|Unable to pushd $sd" t
         return
     fi
+    log "GEN|INFO|Downloading...." t
     while [ $x -lt ${#urls[@]} ]; do
-        wget ${urls[$x]}
+        pkg=$(basename ${urls[$x]})
+        processCmd "sudo -u pkm wget ${urls[$x]} -vO $sd/$pkg"
         ((x++))
     done
     popd
@@ -820,7 +860,8 @@ function createSkeleton {
         log "GEN|WARNING|Config Directory exists. Previous configuration file will be left intact." t
         return
     fi
-    install -vdm755 $sdnConf
+    log "GEN|INFO|Installing $sdnConf" t t
+    processCmd "sudo -u pkm install -vdm775 -o pkm -g pkm $sdnConf"
 
     echo -n "Does the package requires a build directory? y/N "
     read d
@@ -835,18 +876,17 @@ function createSkeleton {
             hasBuildDir=1
             ;;
     esac
-
+    log "GEN|INFO|buildDir set to: $buildDir." t t
     log "GEN|INFO|Creating general config file with default values." t
     tconf="tf:$tf\nsdn:$sdn\nhasBuildDir:$hasBuildDir\nbypassImplement:1\ntasks:unpack,implement,cleanup"
     genConfigFile="$sdnConf/$sdn.conf"
-    touch $genConfigFile
-    chmod 666 -v $genConfigFile
-    sudo chown -v pkm:pkm $genConfigFile
+    processCmd "sudo -u pkm touch $genConfigFile"
+    processCmd "sudo -u pkm chmod 666 -v $genConfigFile"
     echo -e $tconf > "${genConfigFile}"
 
     cmdArrLen=${#cmdFileList[@]}
     log "GEN|INFO|Installing configuration files." t
-    install -g pkm -o pkm -m664 -v $confBase/templates/* $sdnConf/
+    processCmd "sudo -u pkm install -g pkm -o pkm -m664 -v $confBase/templates/* $sdnConf/"
     log "GEN|INFO|Done." t
 
 }
@@ -862,22 +902,53 @@ function prepPkg {
         log "GEN|INFO|Empty package provided." t
         return
     fi
+    log "GEN|INFO|Searching for $pkg." t
     searchPkg $inputPkg
     if [ "$pkg" = "NA" ]; then
+        log "GEN|WARNING|Not found in search. If you just downloaded file, this message is normal." t
         return
     fi
+    log "GEN|INFO|Pkg: $pkg found." t
     tf=$pkg
-    sdn=`tar -tf $sd/$tf |egrep '^[^/]+/?$'`
-    sdn="${sdn::-1}"
+    log "GEN|INFO|tf: $tf" t t
+    ext="${tf##*.}"
+    log "GEN|INFO|ext:$ext" t t
+    local unpackOpt
+    if [[ "$ext" == "xz" ]]; then
+        unpackOpt="-tf"
+    elif [[ "$ext" == "gz" ]]; then
+        unpackOpt="-tfz"
+    elif [[ "$ext" == "gzip" ]]; then
+        unpackOpt="-tfz"
+    elif [[ "$ext" == "bz2" ]]; then
+        unpackOpt="-tfj"
+    elif [[ "$ext" == "tgz" ]]; then
+        unpackOpt="-tfz"
+    fi
+    log "GEN|INFO|Establishing sdn..." t t
+    sdn=`tar $unpackOpt $sd/$pkg |head -n1 |sed -e 's/\/.*//' | sed -e 's/^\.//' |sed ':a;N;$!ba;s/\n//' |uniq`
+    
+    if [[ "$sdn" = "" ]]; then
+        sdn=`tar $unpackOpt $sd/$pkg |head -n2 |sed -e 's/\/.*//' | sed -e 's/^\.//' |sed ':a;N;$!ba;s/\n//' |uniq`
+        if [[ "$sdn" = "" ]]; then
+                    log "GEN|WARNING|Unable to set sdn." t
+                    promptUser "Enter sdn: "
+                    read sdn
+        fi
+    fi
     log "GEN|INFO|snd set to: $sdn" t t
     sdnConf="$confBase/$sdn"
     log "GEN|INFO|sdnConf set to: $sdnConf" t t
+    log "GEN|INFO|Calling setCmdFileList" t t
     setCmdFileList
     if [[ $? > 0 ]]; then
         log "{GEN,ERR}|ERROR|setCmdFileList returned 1 unable to continue." t t
         return 1
     fi
+    log "GEN|INFO|setCmdFileList done." t t
+    log "GEN|INFO|Calling createSkeleton." t t
     createSkeleton
+    log "GEN|INFO|CreateSkeleton done." t t
 }
 
 
@@ -906,6 +977,10 @@ function evalPrompt {
             ;;
         unpack)
             unpack
+            ;;
+        depcheck)
+            log "GEN|INFO|Running dependency check scripts" true
+            sourceScript "${depcheckCmdFile}"
             ;;
         preconfig)
             if [ $hasBuildDir -lt 1 ]; then
@@ -1033,6 +1108,9 @@ function evalPrompt {
             switchMode
             ;;
         debug)
+            if [[ "$2" = "" ]]; then
+                return
+            fi
             DEBUG=$2
             ;;
         reload)
@@ -1049,7 +1127,7 @@ function evalPrompt {
 
             if [ -f /var/run/pkm/pkm.lock ]; then
                 log "GEN|INFO|Removing pkm lock." t
-                rm -v /var/run/pkm/pkm.lock
+                sudo -u pkm rm -v /var/run/pkm/pkm.lock
             fi
             CURSTATE=1
             ;;
