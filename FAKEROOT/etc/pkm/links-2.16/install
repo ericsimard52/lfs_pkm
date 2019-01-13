@@ -1,0 +1,4 @@
+make DESTDIR=$FAKEROOT/$sdn install
+install -vdm755 $FAKEROOT/$sdn/usr/share/doc/links-2.16
+install -vm644 doc/links_cal/* KEYS BRAILLE_HOWTO $FAKEROOT/$sdn/usr/share/doc/links-2.16
+

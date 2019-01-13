@@ -1,0 +1,4 @@
+make PREFIX=/usr \
+SHAREDIR=/usr/share/hwdata \
+SHARED=yes
+

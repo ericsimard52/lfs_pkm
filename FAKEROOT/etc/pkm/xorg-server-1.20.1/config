@@ -1,0 +1,2 @@
+./configure $XORG_CONFIG --enable-glamor --enable-install-setuid --enable-suid-wrapper --disable-systemd-logind --with-xkb-output=/var/lig/xkb
+  

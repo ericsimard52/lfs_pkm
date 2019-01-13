@@ -1,0 +1,2 @@
+./configure --prefix=/usr --docdir=/usr/share/doc/acpid-2.0.30
+  

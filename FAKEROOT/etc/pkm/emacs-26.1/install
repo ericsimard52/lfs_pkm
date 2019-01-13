@@ -1,0 +1,3 @@
+sudo make DESTDIR=$FAKEROOT/$sdn install
+sudo chown -vR root:root $FAKEROOT/$sdn/usr/share/emacs/26.1
+

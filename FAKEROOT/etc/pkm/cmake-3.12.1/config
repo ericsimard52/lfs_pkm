@@ -1,0 +1,7 @@
+./bootstrap --prefix=/usr \
+  --system-libs \
+  --mandir=/share/man \
+  --no-system-jsoncpp \
+  --no-system-librhash \
+  --docdir=/share/doc/cmake-3.12.1
+  

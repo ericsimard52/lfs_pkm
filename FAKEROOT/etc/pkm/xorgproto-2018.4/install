@@ -1,0 +1,4 @@
+sudo DESTDIR=$FAKEROOT/$sdn ninja install
+sudo install -vdm755 $FAKEROOT/$sdn/$XORG_PREFIX/share/doc/xorgproto-2018.4
+sudo install -vm644 ../[^m]*.txt ../PM_spec $FAKEROOT/$sdn/$XORG_PREFIX/share/doc/xorgproto-2018.4
+  

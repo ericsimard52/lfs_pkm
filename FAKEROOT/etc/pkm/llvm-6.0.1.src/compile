@@ -1,0 +1,5 @@
+processCmd "ninja"
+if [[ $? > 0 ]]; then
+   log "{GEN,PKG,ERR}|ERROR|Error compiling." t
+   return $?
+fi

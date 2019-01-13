@@ -1,0 +1,10 @@
+sudo install  -v -m700 -d /var/lib/sshd
+sudo chown    -v root:sys /var/lib/sshd
+sudo groupadd -g 50 sshd
+sudo useradd  -c 'sshd PrivSep' \
+         -d /var/lib/sshd  \
+         -g sshd           \
+         -s /bin/false     \
+         -u 50 sshd
+patch -Np1 -i ../openssh-7.7p1-openssl-1.1.0-1.patch
+  

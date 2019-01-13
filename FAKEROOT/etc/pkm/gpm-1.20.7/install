@@ -1,0 +1,6 @@
+make DESTDIR=$FAKEROOT/$sdn install
+install-info --dir-file=/usr/share/info/dir $FAKEROOT/$sdn/usr/share/info/gpm.info
+ln -svf libgpm.so.2.1.0 $FAKEROOT/$sdn/usr/lib/libgpm.so
+install -vm755 -d $FAKEROOT/$sdn/usr/share/doc/gpm-1.20.7/support
+install -vm644 doc/support/* $FAKEROOT/$sdn/usr/share/doc/gpm-1.20.7/support
+install -vm644 doc/{FAQ,HACK_GPM,README*} $FAKEROOT/$sdn/usr/share/doc/gpm-1.20.7

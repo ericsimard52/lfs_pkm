@@ -1,0 +1,41 @@
+pushd $sd/$sdn/app
+for package in $(grep -v '^#' ../app-7.md5 | awk '{print $2}')
+do
+  packagedir=${package%.tar.bz2}
+  tar -xf $package
+  pushd $packagedir
+     case $packagedir in
+       luit-[0-9]* )
+         sed -i -e "/D_XOPEN/s/5/6/" configure
+       ;;
+     esac
+
+     ./configure $XORG_CONFIG
+     promptUser "Check configs, continue?"
+     read p
+     case $p in
+         [nN])
+             return
+             ll
+     esac
+     make
+     promptUser "Check compile, continue?"
+     read p
+     case $p in
+         [nN])
+             return
+             ll
+     esac
+     sudo make install
+     promptUser "Check install, continue?"
+     read p
+     case $p in
+         [nN])
+             return
+             ll
+     esac
+     
+  popd
+  rm -rf $packagedir
+done
+popd

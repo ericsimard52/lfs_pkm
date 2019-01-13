@@ -1,0 +1,148 @@
+# For required dependencies
+declare -a depName=('at-spi2-core' 'ATK') ## Name of the dependencies
+declare -a depVersion=('2.28.0' '2.29.2') ## Required version
+declare -a depLocate=('') ## File to run against command and locate if first 1 fails.
+declare -a depLdconfig=('libatspi.so' 'libatk-1.0.so') ## Use for libs. provide '' in depLocate
+declare -a depNameMissing=()
+declare -a depVersionMissing=()
+
+# Recommended dependencies
+declare -a recDepName=()
+declare -a recDepVersion=()
+declare -a recDepLocate=()
+declare -a recDepLdconfig=()
+declare -a recDepNameMissing=()
+declare -a recDepVersionMissing=()
+
+# Optional dependencies
+declare -a optDepName=()
+declare -a optDepVersion=()
+declare -a optDepLocate=()
+declare -a optDepLdconfig=()
+declare -a optDepNameMissing=()
+declare -a optDepVersionMissing=()
+
+
+### Required dependencies
+log "GEN|INFO|Checking required dependencies." t
+depOK=0
+x=0
+depLen=${#depName[@]}
+while [ $x -lt $depLen ]; do
+    log "PKG|INFO|Checking for ${depName[$x]}..."
+    if [[ "${depLocate[$x]}" = "" ]]; then
+        checkLibInstalled ${depLdconfig[$x]}
+    else
+        checkInstalled ${depLocate[$x]}
+    fi
+    if [[ $? > 0 ]]; then
+        log "{GEN,PKG,ERR}|ERROR|${depName[$x]} needed and not found." t
+        depNameMissing+=(${depName[$x]})
+        depVersionMissing+=(${depVersion[$x]})
+        depOK=1
+    else
+        if [[ "${depLocate[$x]}" = "" ]]; then
+            log "PKG|INFO|Target is lib, not checking version." t t
+        else
+            log "PKG|INFO|Check for version >= ${depVersion[$x]}" t
+            checkVersion "${depLocate[$x]}" "${depVersion[$x]}"
+            if [[ $? > 0 ]]; then
+                log "{GEN,PKG,ERR}|ERROR|${depName[$x]} version not matched." t
+                depNameMissing+=(${depName[$x]})
+                depVersionMissing+=(${depVersion[$x]})
+                depOK=1
+            fi
+        fi
+        if [[ $depOK = 0 ]]; then
+            log "PKG|INFO|${depName[$x]} good..."
+        fi
+    fi
+    ((x++))
+done
+
+### Recommended dependencies
+log "GEN|INFO|Checking recommended dependencies." t
+x=0
+recDepLen=${#recDepName[@]}
+while [ $x -lt $recDepLen ]; do
+    log "PKG|INFO|Checking for ${depName[$x]}..." t
+    checkInstalled ${recDepLocate[$x]}
+    if [[ $? > 0 ]]; then
+        log "{GEN,PKG,ERR}|ERROR|${recDepName[$x]} RECIONAL and not found." t
+        recDepNameMissing+=(${recDepName[$x]})
+        recDepVersionMissing+=(${recDepVersion[$x]})
+    else
+        log "PKG|INFO|Check for version >= ${recDepVersion[$x]}" t
+        checkVersion "${recDepLocate[$x]}" "${recDepVersion[$x]}"
+        if [[ $? > 0 ]]; then
+            log "{GEN,PKG,ERR}|ERROR|${recDepName[$x]} version not matched." t
+            recDepNameMissing+=(${recDepName[$x]})
+            recDepVersionMissing+=(${recDepVersion[$x]})
+        else
+            log "PKG|INFO|${recDepName[$x]} good..."
+        fi
+    fi
+    ((x++))
+done
+
+
+### Recional dependencies
+log "GEN|INFO|Checking recional dependencies." t
+x=0
+optDepLen=${#optDepName[@]}
+while [ $x -lt $optDepLen ]; do
+    log "PKG|INFO|Checking for ${depName[$x]}..." t
+    checkInstalled ${optDepLocate[$x]}
+    if [[ $? > 0 ]]; then
+        log "{GEN,PKG,ERR}|ERROR|${optDepName[$x]} OPTIONAL and not found." t
+        optDepNameMissing+=(${optDepName[$x]})
+        optDepVersionMissing+=(${optDepVersion[$x]})
+    else
+        log "PKG|INFO|Check for version >= ${optDepVersion[$x]}" t
+        checkVersion "${optDepLocate[$x]}" "${optDepVersion[$x]}"
+        if [[ $? > 0 ]]; then
+            log "{GEN,PKG,ERR}|ERROR|${optDepName[$x]} version not matched." t
+            optDepNameMissing+=(${optDepName[$x]})
+            optDepVersionMissing+=(${optDepVersion[$x]})
+        else
+            log "PKG|INFO|${optDepName[$x]} good..."
+        fi
+    fi
+    ((x++))
+done
+
+
+if [ $depLen -gt 0 ]; then
+    x=0
+    msg="Required dependency missing:\n"
+    while [ $x -lt $depLen ]; do
+        msg="$msg${depNameMissing[$x]} >= ${depVersionMissing[$x]}\n"
+        ((x++))
+    done
+    log "{GEN,PKG}|WARNING|$msg" t
+fi
+
+if [ $recDepLen -gt 0 ]; then
+    x=0
+    msg="Recommended dependency missing:\n"
+    while [ $x -lt $recDepLen ]; do
+        msg="$msg${recDepNameMissing[$x]} >= ${recDepVersionMissing[$x]}\n"
+        ((x++))
+    done
+    log "{GEN,PKG}|WARNING|$msg" t
+fi
+
+if [ $optDepLen -gt 0 ]; then
+    x=0
+    msg="Optional dependency missing:\n"
+    while [ $x -lt $optDepLen ]; do
+        msg="$msg${optDepNameMissing[$x]} >= ${optDepVersionMissing[$x]}\n"
+        ((x++))
+    done
+    log "{GEN,PKG}|WARNING|$msg" t
+fi
+
+if [[ $depOK > 0 ]]; then
+    log "{GEN,PKG}|ERROR|Dependencies not met." t
+    return 1
+fi

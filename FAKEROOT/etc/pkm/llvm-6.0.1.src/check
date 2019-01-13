@@ -1,0 +1,11 @@
+if [[ $DEBUG = 0 ]]; then
+    ninja check-all $D0
+elif [[ $DEBUG = 1 ]]; then
+    ninja check-all $D1
+else
+    ninja check-all $D2
+
+if [[ $? > 0 ]]; then
+    log "{GEN,PKG,ERR}|ERROR|Error in check-all" t
+    return $?
+fi

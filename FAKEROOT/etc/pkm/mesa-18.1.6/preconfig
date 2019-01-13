@@ -1,0 +1,1 @@
+sudo patch -Np1 -i ../mesa-18.1.6-add_xdemos-1.patch

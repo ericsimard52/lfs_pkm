@@ -1,0 +1,6 @@
+sudo make DESTDIR=$FAKEROOT/$sdn install
+sudo rm -fr docs/examples/.deps
+sudo find docs \( -name Makefile\* -o -name \*.1 -o -name \*.3 \) -exec rm {} \;
+sudo install -vdm755 $FAKEROOT/$sdn/usr/share/doc/curl-7.61.0
+sudo cp -v -R docs/* $FAKEROOT/$sdn/usr/share/doc/curl-7.61.0
+  

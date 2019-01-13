@@ -1,0 +1,4 @@
+tar xf ../xmlts20130923.tar.gz
+make check > check.log
+grep -E '^Total|expected' check.log
+  

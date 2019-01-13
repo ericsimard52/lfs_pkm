@@ -1,0 +1,8 @@
+echo "XORG_CONFIG: $XORG_CONFIG"
+echo -n "Continue? "
+read p
+case $p in
+    [nN])
+        exit 1
+esac
+./configure  $XORG_CONFIG

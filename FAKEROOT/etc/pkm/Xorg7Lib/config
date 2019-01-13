@@ -1,0 +1,7 @@
+sudo mkdir -vm777 $sd/$sdn/lib
+pushd $sd/$sdn/lib
+grep -v '^#' /etc/pkm/Xorg7Lib/lib-7.md5 | awk '{print $2}' | wget -i- -c \
+    -B https://www.x.org/pub/individual/lib/
+md5sum -c /etc/pkm/Xorg7Lib/lib-7.md5
+popd
+  

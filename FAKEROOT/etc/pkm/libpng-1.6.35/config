@@ -1,0 +1,3 @@
+gzip -cd ../libpng-1.6.35-apng.patch.gz | patch -p1
+LIBS=-lpthread ./configure --prefix=/usr --disable-static
+  

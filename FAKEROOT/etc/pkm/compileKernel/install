@@ -1,0 +1,19 @@
+promptUser "Enter kernel build tag: "
+read KERNELTAG
+cp -iv arch/x86_64/boot/bzImage /boot/vmlinuz-4.18.5-lfs-8.3-$KERNELTAG
+cp -iv System.map /boot/System.map-4.18.5-$KERNELTAG
+cp .config /boot/config-4.18.5-$KERNELTAG
+GRUBENTRY="menuentry \"LFS 8.3 $TAG\" {
+linux /vmlinux-4.18.5-$TAG root=/dev/sda3 ro
+}"
+promptUser "Grub Entry: $GRUBENTRY\n Do we add it? [y/N]"
+read confirm
+case $confirm in
+    [yY])
+        echo $GRUBENTRY >> /boot/grub/grub.cfg
+        echo "Done."
+        ;;
+    [nN]|*)
+        echo "Doing nothing"
+        ;;
+esac

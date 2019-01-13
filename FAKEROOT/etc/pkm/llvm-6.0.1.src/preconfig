@@ -1,0 +1,44 @@
+log "{GEN,PKG}|INFO|Checking dependencies" t
+log "{GEN,PKG}|INFO|We need cmake >= 3.12.1" t
+checkInstalled cmake
+if [[ $? > 0 ]]; then
+    log "{GEN,PKG,ERR}|ERROR|Cmake needed and not found." t
+    return $?
+fi
+checkVersion cmake "3.12.1"
+if [[ $? > 0 ]]; then
+    log "{GEN,PKG,ERR}|ERROR|Cmake version no good, we need >= 3.12.1" t
+    return $?
+fi
+log "{GEN,PKG}|INFO|Cmake OK." t
+log "{GEN,PKG}|INFO|We need Python >= 2.7.15." t
+checkInstalled python2
+if [[ $? > 0 ]]; then
+    log "{GEN,PKG,ERR}|ERROR|Python2 needed and not found." t
+    return $?
+fi
+checkVersion python2 "2.7.15"
+if [[ $? > 0 ]]; then
+    log "{GEN,PKG,ERR}|ERROR|Python2 version no good, we need >= 2.7.15" t
+    return $?
+fi
+
+log "{GEN,PKG}|Checking if optional packages are present." t
+declare optPkg
+optPkg="cfe-6.0.1.src.tar.xz"
+if [ -f ../$optPkg ]; then
+    log "{GEN,PKG}|INFO|$optPkg found." t
+    log "PKG|INFO|Unpack & Moving $optPkg" t
+    processCmd "tar -xvf ../$optPkg -C tools"
+    processCmd "mv -v tools/cfe-6.0.1.src tools/clang"
+fi
+log "{GEN,PKG}|INFO|$optPkg ready." t
+optPkg="compiler-rt-6.0.1.src.tar.xz"
+if [ -f ../$optPkg ]; then
+    log "{GEN,PKG}|INFO|$optPkg found." t
+    log "PKG|INFO|Unpack & Moving $optPkg" t
+    processCmd "tar -xvf ../$optPkg -C projects"
+    processCmd "mv -v projects/compiler-rt-6.0.1.src projects/compiler-rt"
+fi
+log "{GEN,PKG}|INFO|$optPkg ready." t
+

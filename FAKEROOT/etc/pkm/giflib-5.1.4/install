@@ -1,0 +1,6 @@
+sudo make DESTDIR=$FAKEROOT/$sdn install
+sudo find doc \( -name Makefile\* -o -name \*.1 \
+  -o -name \*.xml \) -exec rm -v {} \
+sudo install -vdm755 $FAKEROOT/$sdn/usr/share/doc/giflib-5.1.4
+sudo cp -vR doc/* $FAKEROOT/$sdn/usr/share/doc/giflib-5.1.4
+  
