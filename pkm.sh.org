@@ -906,7 +906,7 @@ declare -a CMDFILELIST AUTOINSTALLCMDLIST
               requestHostBackup
               ;;
           installpkm)
-              installManager
+              installPkm
               ;;
           dumpenv)
               dumpEnv
@@ -973,6 +973,35 @@ declare -a CMDFILELIST AUTOINSTALLCMDLIST
       fi
 
       exit $ret
+  }
+#+END_SRC
+
+#+NAME: installPkm
+#+BEGIN_SRC bash :eval no :exports code :tangle FAKEROOT/usr/bin/pkm.sh :tangle-mode (identity #o0755)
+  function installPkm {
+      pkmPath_=/opt/Pkm
+      if [ ! -d $pkmPath_ ]; then
+          processCmd "sudo install -vdm 0755 $pkmPath_"
+          [ $? -gt 0 ] && log "GEN|ERROR|Error install $pkmPath_" t && return 1
+
+      fi
+      mPush $pkmPath_
+      log "GEN|INFO|Downloading Pkm." t
+      processCmd "sudo wget https://github.com/ericsimard52/lfs_pkm/archive/master.zip"
+      [ $? -gt 0 ] && log "GEN|ERROR|Error downloading pkm from https://github.com/ericsimard52/lfs_pkm/archive/master.zip" t && mPop &&return 1
+
+      log "GEN|INFO|Installing Pkm" t
+      processCmd "sudo unzip -o master.zip"
+      [ $? -gt 0 ] && log "GEN|ERROR|Error during unzip master.zip" t && mPop && return 1
+      processCmd "sudo mv lfs_pkm-master Pkm"
+      [ $? -gt 0 ] && log "GEN|ERROR|Error during move" t && mPop && return 1
+      processCmd "sudo chown -cR root:root Pkm"
+      [ $? -gt 0 ] && log "GEN|ERROR|Error during chown" t && mPop && return 1
+      processCmd "sudo rm -v master.zip"
+      [ $? -gt 0 ] && log "GEN|ERROR|Error rm master.zip" t && mPop && return 1
+      processCmd "sudo cp -vfr $pkmPath_/Pkm/FAKEROOT/* /"
+      [ $? -gt 0 ] && log "GEN|ERROR|Error copying pkm in system files." t && mPop && return 1
+      mPop
   }
 #+END_SRC
 
