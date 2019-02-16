@@ -22,6 +22,13 @@ function singleton {
     fi
     touch /var/run/pkm/pkm.lock
     [ $? -gt 0 ] && quitPkm 1 "Unable to create lock file."
+    if [ -f /usr/bin/pkmFirstRun.sh ]; then
+        /usr/bin/pkmFirstRun.sh
+        [ $? -gt 0 ] && quitPkm 1 "Error with pkmFirstRun."
+        rm -v /usr/bin/pkmFirstRun.sh
+        [ $? -gt 0 ] && quitPkm 1 "Error removing /usr/bin/pkmFirstRun.sh do it manually."
+        quitPkm 0 "pkmFirstRun returned 0, restart pkm"
+    fi
 }
 
 function startLog {
@@ -881,6 +888,8 @@ function installPkm {
         [ $? -gt 0 ] && log "GEN|ERROR|Error install $pkmPath_" t && return 1
 
     fi
+    log "GEN|INFO|Removing old pkm." t
+    processCmd "rm -vfr $pkmPath_/*"
     mPush $pkmPath_
     log "GEN|INFO|Downloading Pkm." t
     processCmd "sudo wget https://github.com/ericsimard52/lfs_pkm/archive/master.zip"
