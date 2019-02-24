@@ -1,4 +1,4 @@
-mkdir -pv /{bin,boot,etc/{opt,sysconfig},home,lib/firmware,mnt,opt}
+
 mkdir -pv /{media/{floppy,cdrom},sbin,srv,var}
 install -dv -m 0750 /root
 install -dv -m 1777 /tmp /var/tmp
@@ -16,7 +16,7 @@ mkdir -v /var/{log,mail,spool}
 ln -sv /run /var/run
 ln -sv /run/lock /var/lock
 mkdir -pv /var/{opt,cache,lib/{color,misc,locate},local}
-ln -sv /tools/bin/{bash,cat,dd,echo,ln,pwd,rm,stty} /bin
+
 ln -sv /tools/bin/{env,install,perl} /usr/bin
 ln -sv /tools/lib/libgcc_s.so{,.1} /usr/lib
 ln -sv /tools/lib/libstdc++.{a,so{,.6}} /usr/lib
@@ -68,3 +68,6 @@ mail:x:34:
 nogroup:x:99:
 users:x:999:
 EOF
+
+[ ! -d /var/log/pkm ] && install -vdm 777 /var/log/pkm
+[ ! -d /var/log/pkm/implementationLogs ] && install -vdm 777 /var/log/pkm/implementationLogs
