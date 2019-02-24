@@ -1,3 +1,6 @@
-ln -sfv /tools/lib/lib{blk,uu}id.so.1 lib
-make LD_LIBRARY_PATH=/tools/lib check
+processCmd "ln -sfv /tools/lib/lib{blk,uu}id.so.1 lib"
+processCmd "make LD_LIBRARY_PATH=/tools/lib check"
+[ $? -gt 0 ] && return 1
+return 0
+
   

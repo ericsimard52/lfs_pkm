@@ -1,3 +1,6 @@
-make DESTDIR=$FAKEROOT/$sdn install
+processCmd "make DESTDIR=$FAKEROOT/$SDN install"
 unset BUILD_ZLIB BUILD_BZIP2
-  
+[ $? -gt 0 ] && return 1
+return 0
+
+

@@ -1,4 +1,7 @@
-make DESTDIR=$FAKEROOT/$sdn  LD_LIBRARY_PATH=/tools/lib install
-tar -xvf ../udev-lfs-20171102.tar.bz2
-make DESTDIR=$FAKEROOT/$sdn -f udev-lfs-20171102/Makefile.lfs install
-  
+processCmd "make DESTDIR=$FAKEROOT/$SDN  LD_LIBRARY_PATH=/tools/lib install"
+[ $? -gt 0 ] && return 1
+processCmd "tar -xvf ../udev-lfs-20171102.tar.bz2"
+processCmd "make DESTDIR=$FAKEROOT/$SDN -f udev-lfs-20171102/Makefile.lfs install"
+[ $? -gt 0 ] && return 1
+return 0
+

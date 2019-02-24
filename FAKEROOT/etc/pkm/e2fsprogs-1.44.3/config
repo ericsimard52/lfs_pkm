@@ -1,9 +1,12 @@
-../configure --prefix=/usr           \
+processCmd "../configure --prefix=/usr           \
              --bindir=/bin           \
              --with-root-prefix=""   \
              --enable-elf-shlibs     \
              --disable-libblkid      \
              --disable-libuuid       \
              --disable-uuidd         \
-             --disable-fsck
+             --disable-fsck"
+[ $? -gt 0 ] && return 1
+  return 0
+  
   

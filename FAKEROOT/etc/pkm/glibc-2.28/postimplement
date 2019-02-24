@@ -1,17 +1,17 @@
-log "INFO:  Install the configuration file and runtime directory for nscd." true
+log "GEN|INFO|Install the configuration file and runtime directory for nscd." t
 if [[ ! -f /etc/nscd.conf ]]; then
-    cp -v ../nscd/nscd.conf /etc/nscd.conf
+    processCmd "cp -v ../nscd/nscd.conf /etc/nscd.conf"
 else
-    log "WARNING: nscd.conf already exists."t
+    log "GEN|WARNING|nscd.conf already exists." t
 fi
 
 if [[ ! -d /var/cache/nscd ]]; then
-    mkdir -pv /var/cache/nscd
+    processCmd "mkdir -pv /var/cache/nscd"
 fi
 
-log "INFO: install the locales that can make the system respond in a different language." true
+log "GEN|INFO|Install the locales that can make the system respond in a different language." t
 if [[ ! -d /usr/lib/locale ]]; then
-    mkdir -pv /usr/lib/locale
+    processCmd "mkdir -pv /usr/lib/locale"
 fi
 localedef -v -i cs_CZ -f UTF-8 cs_CZ.UTF-8
 localedef -v -i de_DE -f ISO-8859-1 de_DE
@@ -35,7 +35,7 @@ localedef -v -i ru_RU -f UTF-8 ru_RU.UTF-8
 localedef -v -i tr_TR -f UTF-8 tr_TR.UTF-8
 localedef -v -i zh_CN -f GB18030 zh_CN.GB18030
 
-log "INFO: Adding nsswitch.conf" true
+log "GEN|INFO|Adding nsswitch.conf" t
 
 cat > /etc/nsswitch.conf << "EOF"
 # Begin /etc/nsswitch.conf
@@ -55,10 +55,10 @@ rpc: files
 # End /etc/nsswitch.conf
 EOF
 
-log "INFO: Adding time zone data" true
+log "GEN|INFO|Adding time zone data" t
 
 if [[ ! -f ../../tzdata2018e.tar.gz ]]; then
-    log "ERROR: tzdata2018e.tar.gz missing from here." t
+    log "GEN|ERR|Error tzdata2018e.tar.gz missing from here." t
     return 1
 fi
 tar -xf ../../tzdata2018e.tar.gz
@@ -74,14 +74,14 @@ cp -v zone.tab zone1970.tab iso3166.tab $ZONEINFO
 zic -v -d $ZONEINFO -p America/New_York
 unset ZONEINFO
 
-log "INFO: Determining time zone" t
+log "GEN|INFO|Determining time zone" t
 tzselect
 
 promptUser "Enter timezone: "
 read t
 cp -v /usr/share/zoneinfo/$t /etc/localtime
 
-log "INFO: Configuring dynamic loader." t
+log "GEN|INFO|Configuring dynamic loader." t
 cat > /etc/ld.so.conf << "EOF"
 # Begin /etc/ld.so.conf
 /usr/local/lib
@@ -96,7 +96,7 @@ include /etc/ld.so.conf.d/*.conf
 EOF
 
 if [[ ! -d /etc/ld.so.conf.d  ]]; then
-    mkdir -pv /etc/ld.so.conf.d
+    processCmd "mkdir -pv /etc/ld.so.conf.d"
 fi
 
 

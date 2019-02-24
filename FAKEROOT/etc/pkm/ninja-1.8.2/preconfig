@@ -1,2 +1,4 @@
 export NINJAJOBS=4
-patch -Np1 -i ../ninja-1.8.2-add_NINJAJOBS_var-1.patch
+processCmd "patch -Np1 -i ../ninja-1.8.2-add_NINJAJOBS_var-1.patch"
+return 0
+

@@ -1,0 +1,5 @@
+[ ! -d $FAKEROOT/$SDN/bin ] && processCmd "install -vdm 644 $FAKEROOT/$SDN/bin"
+processCmd "mv -v $FAKEROOT/$SDN/usr/bin/fuser   $FAKEROOT/$SDN/bin"
+processCmd "mv -v $FAKEROOT/$SDN/usr/bin/killall $FAKEROOT/$SDN/bin"
+return 0
+

@@ -1,0 +1,4 @@
+[ ! -d $FAKEROOT/$SDN/lib ] && processCmd "install -vdm644 $FAKEROOT/$SDN/lib"
+processCmd "mv -v $FAKEROOT/$SDN/usr/lib/libz.so.* $FAKEROOT/$SDN/lib"
+[ $? -gt 0 ] && return 1
+return 0

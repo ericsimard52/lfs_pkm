@@ -1,3 +1,5 @@
+processCmd "make  ROOT=$FAKEROOT/$SDN -C src install"
+[ $? -gt 0 ] && return 1
+return 0
 
-make  ROOT=$FAKEROOT/$sdn -C src install
   

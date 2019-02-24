@@ -1,2 +1,5 @@
-python3 configure.py --bootstrap
+processCmd "python3 configure.py --bootstrap"
+[ $? -gt 0 ] && return 1
+return 0
+
   

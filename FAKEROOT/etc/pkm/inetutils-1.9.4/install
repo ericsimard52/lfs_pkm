@@ -1,4 +1,8 @@
-make DESTDIR=$FAKEROOT/$sdn install
-mv -v $FAKEROOT/$sdn/usr/bin/{hostname,ping,ping6,traceroute} $FAKEROOT/$sdn/bin
-mv -v $FAKEROOT/$sdn/usr/bin/ifconfig $FAKEROOT/$sdn/sbin
-  
+processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+[ $? -gt 0 ] && return 1
+processCmd "mv -v $FAKEROOT/$SDN/usr/bin/{hostname,ping,ping6,traceroute} $FAKEROOT/$SDN/bin"
+[ $? -gt 0 ] && return 1
+processCmd "mv -v $FAKEROOT/$SDN/usr/bin/ifconfig $FAKEROOT/$SDN/sbin"
+[ $? -gt 0 ] && return 1
+return 0
+

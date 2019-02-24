@@ -1,2 +1,6 @@
-make && make html
+processCmd "make"
+[ $? -gt 0 ] && return 1
 
+processCmd "make html"
+[ $? -gt 0 ] && return 1
+return 0

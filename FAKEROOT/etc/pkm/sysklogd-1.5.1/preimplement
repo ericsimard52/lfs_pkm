@@ -1,5 +1,5 @@
-install -vdm755 $FAKEROOT/$sdn/etc
-cat > $FAKEROOT/$sdn/etc/syslog.conf << "EOF"
+processCmd "install -vdm755 $FAKEROOT/$SDN/etc"
+cat > $FAKEROOT/$SDN/etc/syslog.conf << "EOF"
 # Begin /etc/syslog.conf
 
 auth,authpriv.* -/var/log/auth.log
@@ -12,4 +12,5 @@ user.* -/var/log/user.log
 
 # End /etc/syslog.conf
 EOF
-  
+
+return 0

@@ -4,4 +4,6 @@ case $(uname -m) in
         -i.orig gcc/config/i386/t-linux64
   ;;
 esac
-rm -vf /usr/lib/gcc
+processCmd "rm -vf /usr/lib/gcc"
+return 0
+

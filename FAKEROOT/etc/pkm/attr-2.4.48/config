@@ -1,5 +1,8 @@
-./configure --prefix=/usr     \
+processCmd "./configure --prefix=/usr     \
             --bindir=/bin     \
             --disable-static  \
             --sysconfdir=/etc \
-            --docdir=/usr/share/doc/attr-2.4.48
+            --docdir=/usr/share/doc/attr-2.4.48"
+[ $? -gt 0 ] && return 1
+return 0
+  

@@ -1,2 +1,5 @@
-make check TESTSUITEFLAGS=-j3
+processCmd "make check TESTSUITEFLAGS=-j3"
+[ $? -gt 0 ] && return 1
+return 0
+
   

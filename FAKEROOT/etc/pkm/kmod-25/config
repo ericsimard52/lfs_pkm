@@ -1,7 +1,9 @@
-./configure --prefix=/usr          \
+processCmd "./configure --prefix=/usr          \
             --bindir=/bin          \
             --sysconfdir=/etc      \
             --with-rootlibdir=/lib \
             --with-xz              \
-            --with-zlib
+            --with-zlib"
+[ $? -gt 0 ] && return 1
+  return 0
   

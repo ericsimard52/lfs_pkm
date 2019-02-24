@@ -3,3 +3,5 @@ rm -v ../gcc/testsuite/g++.dg/pr83239.C
 chown -Rv nobody . 
 su nobody -s /bin/bash -c "PATH=$PATH make -k check"
 ../contrib/test_summary | grep -A7 Summ
+log "GEN|INFO|Review test results." t
+return 0

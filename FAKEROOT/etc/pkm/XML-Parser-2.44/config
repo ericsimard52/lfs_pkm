@@ -1,1 +1,4 @@
-perl Makefile.PL
+processCmd "perl Makefile.PL"
+[ $? -gt 0 ] && return 1
+  return 0
+  

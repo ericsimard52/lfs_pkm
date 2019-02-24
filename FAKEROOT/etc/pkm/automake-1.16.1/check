@@ -1,2 +1,5 @@
-make -j4 check
+processCmd "make -j4 check"
+[ $? -gt 0 ] && return 1
+return 0
+
   

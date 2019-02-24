@@ -1,3 +1,4 @@
 chown -Rv nobody .
 su nobody -s /bin/bash -c "PATH=$PATH make tests"
-  
+[ $? -gt 0 ] && log "GEN|ERROR|Error with check." t && return 1
+return 0

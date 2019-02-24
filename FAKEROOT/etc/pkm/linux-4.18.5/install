@@ -1,15 +1,14 @@
-make INSTALL_HDR_PATH=$FAKEROOT/$sdn headers_install
-if [[ $? > 0 ]]; then
-    exit 1
-fi
+processCmd "make INSTALL_HDR_PATH=$FAKEROOT/$SDN headers_install"
+[ $? -gt 0 ] && log "PKG|ERROR|Error installing in fakeroot." t && return 1
 
-find $FAKEROOT/$sdn/include \( -name .install -o -name ..install.cmd \) -delete
-if [[ $? > 0 ]]; then
-    exit 2
-fi
-cp -rv $FAKEROOT/$sdn/include/* /usr/include |tee -a $ld/${lf[9]} 2>> $ld/$lf
-if [[ $? > 0 ]]; then
-    exit 3
-fi
+
+processCmd "find $FAKEROOT/$SDN/include \( -name .install -o -name ..install.cmd \) -delete"
+[ $? -gt 0 ] && log "PKG|ERROR|Error installing in fakeroot. Running find command." t && return 1
+
+processCmd "install -vdm 644 $FAKEROOT/$SDN/usr"
+processCmd "mv -v $FAKEROOT/$SDN/include $FAKEROOT/$SDN/usr/"
+[ $? -gt 0 ] && log "PKG|ERROR|Error installing in fakeroot. Moving to usr." t && return 1
+return 0
+
 
 

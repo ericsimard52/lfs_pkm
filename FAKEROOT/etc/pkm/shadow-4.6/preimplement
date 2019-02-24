@@ -1,0 +1,4 @@
+[ ! -d $FAKEROOT/$SDN/bin ] && processCmd "install -vdm $FAKEROOT/$SDN/bin"
+processCmd "mv -v $FAKEROOT/$SDN/usr/bin/passwd $FAKEROOT/$SDN/bin"
+[ $? -gt 0 ] && return 1
+return 0

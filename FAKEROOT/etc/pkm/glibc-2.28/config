@@ -8,6 +8,8 @@ CC="gcc -isystem $GCC_INCDIR -isystem /usr/include" \
 unset GCC_INCDIR
 
 if [[ $? > 0 ]]; then
-    log "ERROR: Error running configure." true
+    log "ERR|ERROR|Error running configure." t
     return 1
 fi
+return 0
+  

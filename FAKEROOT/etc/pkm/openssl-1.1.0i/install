@@ -1,2 +1,4 @@
 sed -i '/INSTALL_LIBS/s/libcrypto.a libssl.a//' Makefile
-make DESTDIR=$FAKEROOT/$sdn MANSUFFIX=ssl install
+processCmd "make DESTDIR=$FAKEROOT/$SDN MANSUFFIX=ssl install"
+[ $? -gt 0 ] && return 1
+return 0

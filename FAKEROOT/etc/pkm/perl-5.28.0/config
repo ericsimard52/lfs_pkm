@@ -6,3 +6,6 @@ sh Configure -des -Dprefix=/usr                 \
                   -Duseshrplib                  \
                   -Dusethreads
 
+[ $? -gt 0 ] && return 1
+  return 0
+  

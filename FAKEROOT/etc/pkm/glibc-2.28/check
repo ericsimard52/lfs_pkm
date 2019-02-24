@@ -1,5 +1,7 @@
-make check
+processCmd "make check"
 if [[ $? > 0 ]]; then
-    res=$?
-    log "ERROR: Error while make check" true
+    return 1
 fi
+
+return 0
+

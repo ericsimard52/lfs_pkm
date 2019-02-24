@@ -1,2 +1,6 @@
-make DESTDIR=$FAKEROOT/$sdn  install && make DESTDIR=$FAKEROOT/$sdn install-html
+processCmd "make DESTDIR=$FAKEROOT/$SDN  install"
+[ $? -gt 0 ] && return 1
+processCmd "make DESTDIR=$FAKEROOT/$SDN install-html"
+[ $? -gt 0 ] && return 1
+return 0
 

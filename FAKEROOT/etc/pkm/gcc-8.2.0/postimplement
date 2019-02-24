@@ -1,6 +1,66 @@
-ln -sv ../usr/bin/cpp /lib
-ln -sv gcc /usr/bin/cc
-install -v -dm755 /usr/lib/bfd-plugins
-ln -sfv ../../libexec/gcc/$(gcc -dumpmachine)/8.2.0/liblto_plugin.so \
-        /usr/lib/bfd-plugins/
-log "WARNING: Manual testing are required. Follow instruction in the book." t
+processCmd "ln -sv ../usr/bin/cpp /lib"
+
+processCmd "ln -sv gcc /usr/bin/cc"
+
+processCmd "ln -sfv ../../libexec/gcc/$(gcc -dumpmachine)/8.2.0/liblto_plugin.so \
+        /usr/lib/bfd-plugins/"
+
+
+log "GEN|INFO|Creating dummy c code." t
+processCmd "echo 'int main(){}' > dummy.c"
+log "GEN|INFO|Attempting to compile." t
+cc dummy.c -v -Wl,--verbose &> dummy.log
+[ $? -gt 0 ] && log "GEN|ERROR|Error compiling." t && return 1
+
+processCmd "readelf -l a.out | grep ': /lib'"
+[ $? -gt 0 ] && return 1
+declare rs_=`readelf -l a.out | grep ': /lib'`
+## Need better testing here
+if [ $? -gt 0 ]; then
+    log "GEN|ERROR|readelf did not return the expected string." t
+    unset rs_
+    return 1
+fi
+
+
+rs_=`grep -o '/usr/lib.*/crt[1in].*succeeded' dummy.log | wc -l`
+if [ ! $rs_ -eq 3 ]; then
+    log "GEN|ERROR|Was expecting 3 lines, got $rs_" t
+    return 1
+fi
+
+rs_=`grep -B4 '^ /usr/include' dummy.log | wc -l`
+if [ ! $rs_ -eq 5 ]; then
+    log "GEN|ERROR|Compiler does not seem to be searching the correct header files." t
+    return 1
+fi
+
+log "GEN|INFO|Next, verify that the new linker is being used with the correct search paths." t
+
+rs_=`grep 'SEARCH.*/usr/lib' dummy.log |sed 's|; |\n|g' | wc -l`
+if [ ! $rs_ -eq 8 ]; then
+    log "GEN|ERROR|Checking that new linker is being used, expected 8 lines, got $rs_" t
+    return 1
+fi
+
+log "GEN|INFO|Next make sure that we're using the correct libc" t
+
+rs_=`grep "/lib.*/libc.so.6 " dummy.log`
+if [ ! "$rs_" == "attempt to open /lib/libc.so.6 succeeded" ]; then
+    log "GEN|ERROR|We do not seem to be using the correct libc." t
+    return 1
+fi
+
+
+log "GEN|INFO|Lastly, make sure GCC is using the correct dynamic linker." t
+
+rs_=`grep found dummy.log`
+
+if [ ! "$rs_" == "found ld-linux-x86-64.so.2 at /lib/ld-linux-x86-64.so.2" ]; then
+    log "GEN|ERROR|We do not seem to be using the correct dynamic linker." t
+    return 1
+fi
+
+processCmd "rm -v dummy.c a.out dummy.log"
+return 0
+

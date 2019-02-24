@@ -1,2 +1,4 @@
 LANG=en_US.UTF-8 make -j1 test &> vim-test.log
-  
+cat vim-test.log
+log "GEN|WARNING|Review results." t
+return 0

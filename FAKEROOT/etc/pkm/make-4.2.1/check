@@ -1,2 +1,5 @@
-make PERL5LIB=$PWD/tests/ check
+processCmd "make PERL5LIB=$PWD/tests/ check"
+[ $? -gt 0 ] && return 1
+return 0
+
   

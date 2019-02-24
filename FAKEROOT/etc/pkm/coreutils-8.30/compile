@@ -1,2 +1,5 @@
-FORCE_UNSAFE_CONFIGURE=1 make
+processCmd "FORCE_UNSAFE_CONFIGURE=1 make"
+[ $? -gt 0 ] && return 1
+return 0
+
   

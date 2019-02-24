@@ -1,6 +1,8 @@
-./configure --prefix=/usr       \
+processCmd "./configure --prefix=/usr       \
             --enable-shared     \
             --with-system-expat \
             --with-system-ffi   \
-            --with-ensurepip=yes 
- 
+            --with-ensurepip=yes"
+[ $? -gt 0 ] && return 1
+  return 0
+  

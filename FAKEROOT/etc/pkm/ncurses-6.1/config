@@ -1,7 +1,9 @@
-./configure --prefix=/usr           \
+processCmd "./configure --prefix=/usr           \
             --mandir=/usr/share/man \
             --with-shared           \
             --without-debug         \
             --without-normal        \
             --enable-pc-files       \
-            --enable-widec
+            --enable-widec"
+[ $? -gt 0 ] && return 1
+return 0

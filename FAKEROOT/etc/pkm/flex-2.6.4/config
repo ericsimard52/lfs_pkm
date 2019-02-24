@@ -1,2 +1,5 @@
-HELP2MAN=/tools/bin/true \
-./configure --prefix=/usr --docdir=/usr/share/doc/flex-2.6.4
+processCmd "HELP2MAN=/tools/bin/true \
+./configure --prefix=/usr --docdir=/usr/share/doc/flex-2.6.4"
+[ $? -gt 0 ] && return 1
+return 0
+

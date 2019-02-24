@@ -1,4 +1,4 @@
-./configure --prefix=/usr           \
+processCmd "./configure --prefix=/usr           \
             --bindir=/sbin          \
             --sbindir=/sbin         \
             --libdir=/usr/lib       \
@@ -8,5 +8,7 @@
             --with-rootlibdir=/lib  \
             --enable-manpages       \
             --disable-static        \
-            --config-cache
+            --config-cache"
+[ $? -gt 0 ] && return 1
+  return 0
   

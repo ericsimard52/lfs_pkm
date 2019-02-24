@@ -1,2 +1,5 @@
-make DESTDIR=$FAKEROOT/$sdn SHLIB_LIBS="-L/tools/lib -lncurses" install
+processCmd "make DESTDIR=$FAKEROOT/$SDN SHLIB_LIBS='-L/tools/lib -lncurses' install"
+[ $? -gt 0 ] && return 1
+return 0
+
 

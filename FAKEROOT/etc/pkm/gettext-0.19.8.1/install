@@ -1,3 +1,6 @@
-make DESTDIR=$FAKEROOT/$sdn install
-chmod -v 0755 $FAKEROOT/$sdn/usr/lib/preloadable_libintl.so
-  
+processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+[ $? -gt 0 ] && return 1
+processCmd "chmod -v 0755 $FAKEROOT/$SDN/usr/lib/preloadable_libintl.so"
+[ $? -gt 0 ] && return 1
+return 0
+

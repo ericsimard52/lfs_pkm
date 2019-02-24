@@ -1,1 +1,4 @@
-make DESTDIR=$FAKEROOT/$sdn PREFIX=/usr install | tee >> $ld/${lf[9]}
+processCmd "make PREFIX=$FAKEROOT/$SDN install"
+[ $? -gt 0 ] && return 1
+return 0
+

@@ -1,0 +1,10 @@
+
+processCmd "install -v -dm755 $FAKEROOT/$SDN/usr/lib/bfd-plugins"
+[ $? -gt 0 ] && return 1
+
+processCmd "mkdir -pv $FAKEROOT/$SDN/usr/share/gdb/auto-load/usr/lib"
+[ $? -gt 0 ] && return 1
+
+processCmd "mv -v $FAKEROOT/$SDN/usr/lib/*gdb.py $FAKEROOT/$SDN/usr/share/gdb/auto-load/usr/lib"
+[ $? -gt 0 ] && return 1
+return 0

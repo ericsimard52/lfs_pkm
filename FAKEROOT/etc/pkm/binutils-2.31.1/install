@@ -1,2 +1,3 @@
-make DESTDIR=$FAKEROOT/$sdn tooldir=/usr install
-  
+processCmd "make DESTDIR=$FAKEROOT/$SDN tooldir=/usr install"
+[ $? -gt 0 ] && return 1
+return 0

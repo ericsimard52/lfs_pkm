@@ -1,0 +1,4 @@
+processCmd "install -d -m755           $FAKEROOT/$SDN/usr/share/doc/sed-4.5"
+processCmd "install -m644 doc/sed.html $FAKEROOT/$SDN/usr/share/doc/sed-4.5"
+return 0
+

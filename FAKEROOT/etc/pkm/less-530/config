@@ -1,2 +1,5 @@
-./configure --prefix=/usr --sysconfdir=/etc
+processCmd "./configure --prefix=/usr --sysconfdir=/etc"
+  [ $? -gt 0 ] && return 1
+  return 0
+  
   

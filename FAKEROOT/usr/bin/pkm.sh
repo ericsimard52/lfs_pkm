@@ -17,12 +17,25 @@ declare PREINSTALLCMDFILE INSTALLCMDFILE PREIMPLEMENTCMDFILE POSTIMPLEMENTCMDFIL
 declare -a CMDFILELIST AUTOINSTALLCMDLIST
 
 function singleton {
+    if [ ! -d /var/run/pkm ]; then
+        echo "Creating /var/run/pkm"
+        install -vdm 644 /var/run/pkm
+    fi
+    if [ ! -d /var/log/pkm ]; then
+        echo "Creating /var/log/pkm"
+        install -vdm 644 /var/log/pkm
+    fi
+    if [ ! -d /var/log/pkm/implementationLog ]; then
+        echo "Creating /var/log/pkm"
+        install -vdm 644 /var/log/pkm
+    fi
     if [ -f /var/run/pkm/pkm.lock ]; then
         quitPkm 1 "Pkm is already running or has not quit properly, in that case, remove /var/run/pkm/pkm.lock" t
     fi
     touch /var/run/pkm/pkm.lock
     [ $? -gt 0 ] && quitPkm 1 "Unable to create lock file."
     if [ -f /usr/bin/pkmFirstRun.sh ]; then
+        echo "pkmFirstRun is present, running."
         /usr/bin/pkmFirstRun.sh
         [ $? -gt 0 ] && quitPkm 1 "Error with pkmFirstRun."
         rm -v /usr/bin/pkmFirstRun.sh
@@ -34,29 +47,29 @@ function singleton {
 function startLog {
     if [ ! -f $GENLOGFILE ]; then
         log "NULL|INFO|Creating $genLogFile" t
-        sudo -u pkm touch $GENLOGFILE
-        sudo -u pkm chmod 666 -v $GENLOGFILE
+         touch $GENLOGFILE
+         chmod 666 -v $GENLOGFILE
     fi
     if [ ! -f $PKGLOGFILE ]; then
         log "NULL|INFO|Creating $pkgLogFile" t
-        sudo -u pkm touch $PKGLOGFILE
-        sudo -u pkm chmod 666 -v $PKGLOGFILE
+         touch $PKGLOGFILE
+         chmod 666 -v $PKGLOGFILE
     fi
     if [ ! -f $IMPLOGFILE ]; then
         log "NULL|INFO|Creating $impLogFile" t
-        sudo -u pkm touch $IMPLOGFILE
-        sudo -u pkm chmod 666 -v $IMPLOGFILE
+         touch $IMPLOGFILE
+         chmod 666 -v $IMPLOGFILE
     fi
     if [ ! -f $ERRLOGFILE ]; then
         log "NULL|INFO|Creating $errLogFile" t
-        sudo -u pkm touch $ERRLOGFILE
-        sudo -u pkm chmod 666 -v $ERRLOGFILE
+         touch $ERRLOGFILE
+         chmod 666 -v $ERRLOGFILE
     fi
     log "NULL|INFO|Creating file descriptor for logs" t t
-    exec {genLogFD}>$GENLOGFILE
-    exec {pkgLogFD}>$PKGLOGFILE
-    exec {impLogFD}>$IMPLOGFILE
-    exec {errLogFD}>$ERRLOGFILE
+    exec {GENLOGFD}>$GENLOGFILE
+    exec {PKGLOGFD}>$PKGLOGFILE
+    exec {IMPLOGFD}>$IMPLOGFILE
+    exec {ERRLOGFD}>$ERRLOGFILE
 }
 
 function quitPkm {
@@ -79,7 +92,7 @@ function quitPkm {
 
     if [ -f /var/run/pkm/pkm.lock ]; then
         log "GEN|INFO|Removing pkm lock." t
-        sudo rm /var/run/pkm/pkm.lock
+         rm /var/run/pkm/pkm.lock
         [ $? -gt 0 ] && echo "Error removing lock." && exit $res
     fi
     if [[ ! "$2" = "" ]]; then
@@ -179,12 +192,17 @@ function processCmd {
         cmd=$cmd" "$part
     done
     log "GEN|INFO|Processing cmd: $cmd"
+    eval "tput sgr0"
     if [[ $DEBUG < 1 ]]; then
         eval "$cmd >&${GENLOGFD} 2>&${ERRLOGFD}"
     elif [[ $DEBUG > 0 ]]; then
         eval "$cmd > >(tee >(cat - >&${GENLOGFD})) 2> >(tee >(cat - >&${ERRLOGFD}) >&2)"
     fi
-    return $?
+    if [ $? -gt 0 ]; then
+       log "GEN|ERROR|Error processcing cmd $cmd" t
+       return 1
+    fi
+    return
 }
 
 ###
@@ -203,7 +221,7 @@ function log {
     fi
     declare _LEVEL _COLOR _MSG _M _LOGMSG _CALLER _CALLERLOG
     declare -a _FDs # Array of file descriptor where messages needs to be redirected to.
-    MSGEND="\e[0m" ## Clear all formatting
+    MSGEND=" \e[0m" ## Clear all formatting
 
     ## Setting up file descriptor destination
     IFS='|' read -ra PARTS <<< $1
@@ -264,7 +282,7 @@ function log {
         _CALLER="\e[32mNONE\e[0m "
     fi
     _MSG=$_COLOR$_LEVEL" - "$_CALLER":"$_COLOR$_M$_MSGEND ## Full message string
-    _LOGMSG=$_LEVEL" - "$_CALLERLOG":"$_M
+    _LOGMSG=$_LEVEL" - "$_CALLERLOG":"$_M$_MSGEND
     ### If $debug is set
     if [[ $DEBUG > 0 ]]; then
         if [[ ! $_FDs ]]; then
@@ -305,7 +323,7 @@ function checkInstalled {
 }
 
 function checkLibInstalled {
-    sudo -u pkm sudo ldconfig -p | grep $1
+    ldconfig -p | grep $1
     [ $? -gt 0 ] && return 1
     return 0
 }
@@ -587,7 +605,7 @@ function unpack {
     [ $? -gt 0 ] && log "{PKG,ERR}|ERROR|Error unpacking with $UNPACKCMD" t && mPop &&  return 1
     if [ $HASBUILDDIR == 0 ] && [ ! -d $SD/$SDN/build ]; then
         log "PKG|INFO|Creating build directory" t
-        processCmd "install -olfs -glfs -vdm755 $SD/$SDN/build"
+        processCmd "install -oroot -groot -vdm755 $SD/$SDN/build"
         [ $? -gt 0 ] && log "{PKG,ERR}|ERROR|Error creating build directory" t && mPop && return 1
     fi
 
@@ -673,6 +691,8 @@ function implementPkg {
     log "{GEN,IMP}|INFO|Setting file in system" t
     processCmd "tar cf - . | (cd / ; tar xvf - )"
     [ $? -gt 0 ] && log "GEN|ERROR|Error during implementation" t && return 1
+    sed -e 's/total [0-9]*//' < <(ls -lAR) > /var/log/pkm/implementationLogs/$SDN.log
+    [ $? -gt 0 ] && log "GEN|ERROR|Error creating implementation log" t && return 1
     log "Done implementation." t
     mPop
     return 0
@@ -700,6 +720,15 @@ function setCmdFileList {
         return 1
     fi
 
+    DEPCHECKCMDFILE=$SDNCONF/depcheck
+    PRECONFIGCMDFILE=$SDNCONF/preconfig
+    CONFIGCMDFILE=$SDNCONF/config
+    COMPILECMDFILE=$SDNCONF/compile
+    CHECKCMDFILE=$SDNCONF/check
+    PREINSTALLCMDFILE=$SDNCONF/preinstall
+    INSTALLCMDFILE=$SDNCONF/install
+    PREIMPLEMENTCMDFILE=$SDNCONF/preimplement
+    POSTIMPLEMENTCMDFILE=$SDNCONF/postimplement
     CMDFILELIST=(
         $DEPCHECKCMDFILE
         $PRECONFIGCMDFILE
@@ -725,13 +754,33 @@ function listTask {
 
 function mPush {
     [ ! $1 ] && return 1
-    processCmd "pushd $1"
+    pushd $1 >/dev/null 2>/dev/null
     [ $? -gt 0 ] && quitPkm 1 "Error pushing $1 onto stack." || return 0
 }
 
 function mPop {
-    processCmd "popd"
+    popd >/dev/null 2>/dev/null
     [ $? -gt 0 ] && quitPkm 1 "Error poping directory of the stack" || return 0
+}
+
+function requestHostBackup {
+    log "GEN|INFO|Requesting backup from host." t
+    declare backupName
+    ## $LFS/var/run from the host will not be the same as within chroot environment
+    ## That is why I use /var/log
+    declare backupPath="/var/log/pkm/backup"
+    [ $1 ] && backupName="LFS_$1" || backupName="LFS"
+    echo $backupName > $backupPath
+    log "GEN|INFO|Request backupname: $backupName." t
+    log "GEN|INFO|Waiting for backup to complete." t
+    while true; do
+        echo -n '.'
+        ls $backupPath > /dev/null 2> /dev/null
+        [ $? -gt 0 ] && break;
+        sleep 3s
+    done
+    echo ""
+    return 0
 }
 
 function evalPrompt {
@@ -754,7 +803,7 @@ function evalPrompt {
             mPop
             ;;
         config)
-            log "GEN|INFO|Running config scripts" t
+            log "GEN|INFO|Running config scripts ${CONFIGCMDFILE}" t
             mPush $BUILDDIR
             sourceScript "${CONFIGCMDFILE}"
             mPop
@@ -779,7 +828,7 @@ function evalPrompt {
             ;;
         install)
             log "GENINFO|Running install scripts" t
-            mpush $BUILDDIR
+            mPush $BUILDDIR
             sourceScript "${INSTALLCMDFILE}"
             mPop
             ;;
@@ -816,13 +865,16 @@ function evalPrompt {
             unloadPkg
             ;;
         backup)
-            requestHostBackup
+            requestHostBackup $2
             ;;
         installpkm)
             installPkm
             ;;
         dumpenv)
             dumpEnv
+            ;;
+        listtask)
+            listTask
             ;;
         debug)
             if [[ "$2" = "" ]]; then
@@ -872,19 +924,19 @@ function quitPkm {
     if [ -f /var/run/pkm/pkm.lock ]; then
         log "GEN|INFO|Removing pkm lock." t
         rm /var/run/pkm/pkm.lock
-        [ $? -gt 0 ] && echo "Error removing lock." && exit $res
+        [ $? -gt 0 ] && echo "Error removing lock."
     fi
     if [[ ! "$2" = "" ]]; then
         echo "Quitting message: $2."
     fi
-
+    tput sgr0
     exit $ret
 }
 
 function installPkm {
     pkmPath_=/opt/Pkm
     if [ ! -d $pkmPath_ ]; then
-        processCmd "sudo install -vdm 0755 $pkmPath_"
+        processCmd " install -vdm 0755 $pkmPath_"
         [ $? -gt 0 ] && log "GEN|ERROR|Error install $pkmPath_" t && return 1
 
     fi
@@ -892,19 +944,19 @@ function installPkm {
     processCmd "rm -vfr $pkmPath_/*"
     mPush $pkmPath_
     log "GEN|INFO|Downloading Pkm." t
-    processCmd "sudo wget https://github.com/ericsimard52/lfs_pkm/archive/master.zip"
+    processCmd " wget https://github.com/ericsimard52/lfs_pkm/archive/master.zip"
     [ $? -gt 0 ] && log "GEN|ERROR|Error downloading pkm from https://github.com/ericsimard52/lfs_pkm/archive/master.zip" t && mPop &&return 1
 
     log "GEN|INFO|Installing Pkm" t
-    processCmd "sudo unzip -o master.zip"
+    processCmd " unzip -o master.zip"
     [ $? -gt 0 ] && log "GEN|ERROR|Error during unzip master.zip" t && mPop && return 1
-    processCmd "sudo mv lfs_pkm-master Pkm"
+    processCmd " mv lfs_pkm-master Pkm"
     [ $? -gt 0 ] && log "GEN|ERROR|Error during move" t && mPop && return 1
-    processCmd "sudo chown -cR root:root Pkm"
+    processCmd " chown -cR root:root Pkm"
     [ $? -gt 0 ] && log "GEN|ERROR|Error during chown" t && mPop && return 1
-    processCmd "sudo rm -v master.zip"
+    processCmd " rm -v master.zip"
     [ $? -gt 0 ] && log "GEN|ERROR|Error rm master.zip" t && mPop && return 1
-    processCmd "sudo cp -vfr $pkmPath_/Pkm/FAKEROOT/* /"
+    processCmd " cp -vfr $pkmPath_/Pkm/FAKEROOT/* /"
     [ $? -gt 0 ] && log "GEN|ERROR|Error copying pkm in system files." t && mPop && return 1
     mPop
 }

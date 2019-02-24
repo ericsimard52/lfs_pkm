@@ -1,3 +1,5 @@
 echo "quit" | ./bc/bc -l Test/checklib.b > /tmp/bcCheck.log
 cat /tmp/bcCheck.log
+log "GEN|INFO|Check above results." t
+return 0
 

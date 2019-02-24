@@ -1,6 +1,5 @@
-mv -v /usr/bin/passwd /bin
-log "INFO: Enable shadow password and group" true
+log "GEN|INFO| Enable shadow password and group." t
 pwconv
 grpconv
-log "INFO: Setting up root passwd" true
+log "GEN|INFO|Setting up root passwd." t
 passwd

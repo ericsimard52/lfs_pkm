@@ -1,0 +1,4 @@
+[ ! -d $FAKEROOT/$SDN/lib ] && processCmd "install -vdm 644 $FAKEROOT/$SDN/lib"
+processCmd "mv -v $FAKEROOT/$SDN/usr/lib/libattr.so.* $FAKEROOT/$SDN/lib"
+return 0
+

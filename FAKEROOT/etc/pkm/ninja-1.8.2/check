@@ -1,4 +1,7 @@
-python3 configure.py
-./ninja ninja_test
-./ninja_test --gtest_filter=-SubprocessTest.SetWithLots
+processCmd "python3 configure.py"
+processCmd "./ninja ninja_test"
+processCmd "./ninja_test --gtest_filter=-SubprocessTest.SetWithLots"
+log "GEN|WARNING|Review test." t
+return 0
+
   

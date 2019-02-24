@@ -1,2 +1,6 @@
-make DESTDIR=$FAKEROOT/$sdn install
-install -v -Dm644 doc/I18N-HOWTO $FAKEROOT/$sdn/usr/share/doc/intltool-0.51.0/I18N-HOWTO
+processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+[ $? -gt 0 ] && return 1
+processCmd "install -v -Dm644 doc/I18N-HOWTO $FAKEROOT/$SDN/usr/share/doc/intltool-0.51.0/I18N-HOWTO"
+[ $? -gt 0 ] && return 1
+return 0
+

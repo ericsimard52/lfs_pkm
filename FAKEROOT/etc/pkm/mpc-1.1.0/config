@@ -1,5 +1,5 @@
-./configure --prefix=/usr    \
+processCmd "./configure --prefix=/usr    \
             --disable-static \
-            --docdir=/usr/share/doc/mpc-1.1.0
-
-
+            --docdir=/usr/share/doc/mpc-1.1.0"
+[ $? -gt 0 ] && return 1
+return 0

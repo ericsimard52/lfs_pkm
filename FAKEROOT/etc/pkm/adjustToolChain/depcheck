@@ -1,0 +1,70 @@
+log "GEN|INFO|Adjusting tool chain." t
+[ ! -f /tools/bin/ld-old ] && processCmd "mv -v /tools/bin/{ld,ld-old}"
+[ ! -f /tools/$(uname -m)-pc-linux-gnu/bin/ld-old ] && processCmd "mv -v /tools/$(uname -m)-pc-linux-gnu/bin/{ld,ld-old}"
+[ -f /tools/bin/ld-new ] && processCmd "mv -v /tools/bin/{ld-new,ld}"
+[ ! -f /tools/$(uname -m)-pc-linux-gnu/bin/ld ] && processCmd "ln -sv /tools/bin/ld /tools/$(uname -m)-pc-linux-gnu/bin/ld"
+
+gcc -dumpspecs | sed -e 's@/tools@@g'                   \
+    -e '/\*startfile_prefix_spec:/{n;s@.*@/usr/lib/ @}' \
+    -e '/\*cpp:/{n;s@$@ -isystem /usr/include@}' >      \
+    `dirname $(gcc --print-libgcc-file-name)`/specs
+
+log "GEN|INFO|Testing compilation." t
+echo 'int main(){}' > dummy.c
+cc dummy.c -v -Wl,--verbose &> dummy.log
+if [ `readelf -l a.out | grep ': /lib' | wc -l` -eq 0 ]; then
+    log "GEN|WARNING|Compilation test does not seem to work. Please check and fix." t
+    return 1
+fi
+
+log "GEN|INFO|Now make sure that we're setup to use the correct start files." t
+
+declare ll=`grep -o '/usr/lib.*/crt[1in].*succeeded' dummy.log | wc -l`
+if [ ! $ll -eq 3 ]; then
+    log "GEN|WARNING|I was expecting 3 succeeded lines. I got $ll." t
+    unset ll
+    return 1
+fi
+unset ll
+
+log "GEN|INFO|Verify that the compiler is searching for the correct header files:" t
+
+processCmd "grep -B1 '^ /usr/include' dummy.log"
+[ $? -gt 0 ] && log "GEN|WARNING|Verification failed." t && return 1
+
+log "GEN|INFO|Next, verify that the new linker is being used with the correct search paths:"
+
+declare lc=`grep 'SEARCH.*/usr/lib' dummy.log |sed 's|; |\n|g' | wc -l`
+
+[ $lc -lt 2 ] && log "GEN|WARNING|I was expecting at least 2 lines, got $lc." t && unset lc && return 1
+unset lc
+
+log "GEN|INFO|Next make sure that we're using the correct libc:" t
+declare sm=`grep "/lib.*/libc.so.6 " dummy.log`
+if [[ ! $sm  == "attempt to open /lib/libc.so.6 succeeded" ]]; then
+    log "GEN|WARNING|I did not get the expected string. Got $sm." t
+    unset $sm
+    return 1
+fi
+unset sm
+
+log "GEN|INFO|Lastly, make sure GCC is using the correct dynamic linker:" t
+
+declare sm=`grep found dummy.log`
+declare fn
+## On 64 bits, uname -m return x86_64. The file name contains X86-64
+## I do not know how the file name will match other platform
+## This may need to be adjusted.
+if [[ "$(uname -m)" == "x86_64" ]]; then
+    fn="ld-linux-x86-64.so.2"
+else
+    fn="ld-linux-$(uname -m).so.2"
+fi
+if [[ ! "$sm" == "found $fn at /lib/$fn" ]]; then
+    log "GEN|WARNING|I did not get the expected results. Something is wrong." t
+    unset $fn
+fi
+
+processCmd "rm -v dummy.c a.out dummy.log"
+log "GEN|INFO|Done! Good job." t
+return 0

@@ -1,7 +1,7 @@
 #!/bin/bash
 declare -a PARTITIONNAME=('root' 'swap')
 declare -a PARTITIONMOUNT=('/')
-declare -a PARTITIONDEV=('/dev/sda7' '/dev/sda2')
+declare -a PARTITIONDEV=('/dev/sda3' '/dev/sda2')
 declare -a PARTITIONFS=('ext4')
 declare LFS=/mnt/lfs
 

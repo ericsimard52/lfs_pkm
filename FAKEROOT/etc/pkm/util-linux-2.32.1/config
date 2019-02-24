@@ -1,4 +1,4 @@
-./configure ADJTIME_PATH=/var/lib/hwclock/adjtime   \
+processCmd "./configure ADJTIME_PATH=/var/lib/hwclock/adjtime   \
             --docdir=/usr/share/doc/util-linux-2.32.1 \
             --disable-chfn-chsh  \
             --disable-login      \
@@ -10,5 +10,7 @@
             --disable-static     \
             --without-python     \
             --without-systemd    \
-            --without-systemdsystemunitdir
+            --without-systemdsystemunitdir"
+[ $? -gt 0 ] && return 1
+  return 0
   
