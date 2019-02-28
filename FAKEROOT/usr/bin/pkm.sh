@@ -5,8 +5,8 @@ declare SD TD SDN SDNCONF PKG EXT HASBUILDDIR BUILDDIR CONFBASE BYPASSIMPLEMENT 
 declare UNPACKCMD
 declare MAKEFLAGS
 declare DEBUG=0
-declare GENLOGFILE PKGLOGFILE IMPLOGFILE ERRLOGFILE
-declare GENLOGFD PKGLOGFD IMPLOGFD ERRLOGFD #File descriptor input only
+declare LOGFILE
+declare LOGFILEFD
 declare ISIMPLEMENTED=1 # This changes to 0 when implementation is done.
 declare CURSTATE=0 # Set to 1 to exit program succesfully
 
@@ -45,31 +45,13 @@ function singleton {
 }
 
 function startLog {
-    if [ ! -f $GENLOGFILE ]; then
-        log "NULL|INFO|Creating $genLogFile" t
-         touch $GENLOGFILE
-         chmod 666 -v $GENLOGFILE
-    fi
-    if [ ! -f $PKGLOGFILE ]; then
-        log "NULL|INFO|Creating $pkgLogFile" t
-         touch $PKGLOGFILE
-         chmod 666 -v $PKGLOGFILE
-    fi
-    if [ ! -f $IMPLOGFILE ]; then
-        log "NULL|INFO|Creating $impLogFile" t
-         touch $IMPLOGFILE
-         chmod 666 -v $IMPLOGFILE
-    fi
-    if [ ! -f $ERRLOGFILE ]; then
-        log "NULL|INFO|Creating $errLogFile" t
-         touch $ERRLOGFILE
-         chmod 666 -v $ERRLOGFILE
+    if [ ! -f $LOGFILE ]; then
+        log "NULL|INFO|Creating $LOGFILE" t
+         touch $LOGFILE
+         chmod 666 -v $LOGFILE
     fi
     log "NULL|INFO|Creating file descriptor for logs" t t
-    exec {GENLOGFD}>$GENLOGFILE
-    exec {PKGLOGFD}>$PKGLOGFILE
-    exec {IMPLOGFD}>$IMPLOGFILE
-    exec {ERRLOGFD}>$ERRLOGFILE
+    exec {LOGFILEFD}>$LOGFILE
 }
 
 function quitPkm {
@@ -83,12 +65,10 @@ function quitPkm {
     [ $? -gt 0 ] && echo "ERROR with unMountLfs, CHECK YOUR SYSTEM." && ret=1
 
     log "GEN|INFO|Closing logs." t
-    [ ${GENLOGFD} ] && exec {GENLOGFD}>&-
-    [ ${PKGLOGFD} ] && exec {PKGLOGFD}>&-
-    [ ${ERRLOGFD} ] && exec {ERRLOGFD}>&-
+    [ ${LOGFILEFD} ] && exec {LOGFILEFD}>&-
 
-    unset GENLOGFILE PKGLOGFILE ERRLOGFILE
-    unset GENLOGFD PKGLOGFD ERRLOGFD
+    unset LOGFILE
+    unset LOGFILEFD
 
     if [ -f /var/run/pkm/pkm.lock ]; then
         log "GEN|INFO|Removing pkm lock." t
@@ -160,22 +140,9 @@ function readConfig {
                 BYPASSIMPLEMENT=${PARAM[1]}
                 log "NULL|INFO|Set param bypassImplement:$BYPASSIMPLEMENT" t t
                 ;;
-            genLog)
-                GENLOGFILE=${PARAM[1]}
-                log "NULL|INFO|Set param genLogFile:$GENLOGFILE" t t
-                ;;
-            pkgLog)
-                PKGLOGFILE=${PARAM[1]}
-                log "NULL|INFO|Set param pkgLogFile:$PKGLOGFILE" t t
-                ;;
-            errLog)
-                ERRLOGFILE=${PARAM[1]}
-                log "NULL|INFO|Set param errLogFile:$ERRLOGFILE" t t
-                ;;
-
-            impLog)
-                IMPLOGFILE=${PARAM[1]}
-                log "NULL|INFO|Set param impLogFile:$IMPLOGFILE" t t
+            logFile)
+                LOGFILE=${PARAM[1]}
+                log "NULL|INFO|Set param LOGFILE:$LOGFILE" t t
                 ;;
             "#") continue;;
             *) continue;;
@@ -194,9 +161,9 @@ function processCmd {
     log "GEN|INFO|Processing cmd: $cmd"
     eval "tput sgr0"
     if [[ $DEBUG < 1 ]]; then
-        eval "$cmd >&${GENLOGFD} 2>&${ERRLOGFD}"
+        $cmd >&${LOGFILEFD} 2>&1
     elif [[ $DEBUG > 0 ]]; then
-        eval "$cmd > >(tee >(cat - >&${GENLOGFD})) 2> >(tee >(cat - >&${ERRLOGFD}) >&2)"
+        $cmd | tee >&${LOGFILEFD} 2>&1
     fi
     if [ $? -gt 0 ]; then
        log "GEN|ERROR|Error processcing cmd $cmd" t
@@ -205,49 +172,23 @@ function processCmd {
     return
 }
 
-###
-# Params "FDs|LEVEL|MESSAGE" PRINTtoSTDOUT
-# FDs define 1 or more file descriptor to send the message to. Possible option: GEN,PKGERR
-#
-# GEN for general log, this log is active when debug is off. Contains general message about progress and results
-# PKG Used to log details when debug is on. contains logs from fetching packages  up to installation.
-# ERR Used when debug is on to store details abouthe error
-# NOTE: More the 1 FD per call can be provided: log "{GEN,ERR}|...."
-# PRINTtoSTDOUT when set, also printhe message to stdout
-###
 function log {
-    if [ $3 ] && [[ $DEBUG = 0 ]]; then
+    ## Format
+    ## log "LEVEL|..." PRINTOSTDOUT DEBUGONLYMESSAGE
+    ## log "INFO|..." t = print to stdout
+    ## log "INFO|..." t t = print to stdout only if debug=1
+    ## log "INFO|..." - t = process only if debug=1 and send only to LOGFILE
+    ## Messages are always sent to LOGFILE
+
+    if [ $3 ] && [[ $DEBUG = 0 ]]; then # if 3 param set, we process msg only if debug is 1
         return
     fi
     declare _LEVEL _COLOR _MSG _M _LOGMSG _CALLER _CALLERLOG
-    declare -a _FDs # Array of file descriptor where messages needs to be redirected to.
+
     MSGEND=" \e[0m" ## Clear all formatting
 
     ## Setting up file descriptor destination
     IFS='|' read -ra PARTS <<< $1
-    case "${PARTS[0]}" in
-        \{*)
-            IFS=',' read -ra DEST <<< ${PARTS[0]}
-            i=0
-            while [[ $i < ${#DEST[@]} ]]; do
-                t="${DEST[$i]}"
-                t="${t/\}}"
-                t="${t/\{}"
-                case "$t" in
-                    GEN) _FDs+=($GENLOGFD);;
-                    PKG) _FDs+=($PKGLOGFD);;
-                    ERR) _FDs+=($ERRLOGFD);;
-                esac
-                ((i++))
-            done
-            IFS='|'
-            ;;
-        GEN) _FDs+=($GENLOGFD);;
-        PKG) _FDs+=($PKGLOGFD);;
-        ERR) _FDs+=($ERRLOGFD);;
-        NULL|*) _FDs+=();;
-    esac
-
     ### Set color formatting
     case "${PARTS[1]}" in
         INFO)
@@ -283,26 +224,13 @@ function log {
     fi
     _MSG=$_COLOR$_LEVEL" - "$_CALLER":"$_COLOR$_M$_MSGEND ## Full message string
     _LOGMSG=$_LEVEL" - "$_CALLERLOG":"$_M$_MSGEND
-    ### If $debug is set
-    if [[ $DEBUG > 0 ]]; then
-        if [[ ! $_FDs ]]; then
-            ## There is no file descriptor setup, printo stdOut and bail
-            echo -e "NO_DESTINATION -- "$_MSG
-            unset IFS _FDs _LEVEL _COLOR _MSG _M _MSGEND _LOGMSG _CALLER _CALLERLOG
-            return
-        fi
-        i=0
-        displayOnce=0
-        while [[ $i < ${#_FDs[@]} ]]; do
-            echo $_LOGMSG >&${_FDs[$i]}
-            ((i++))
-        done
-    fi
 
     # Printo stdOut
-    if [[ $2 ]] && [[ "$2" = "t" ]]; then
+    [ ${LOGFILEFD} ] && echo $_LOGMSG >&${LOGFILEFD}
+    if [[ $2 ]] && [[ "$2" = "t" ]]; then # if t after message, print to stdout
         echo -e $_MSG
     fi
+
 
     unset IFS _FDs _LEVEL _COLOR _MSG _M _MSGEND _LOGMSG _CALLER _CALLERLOG
     return
