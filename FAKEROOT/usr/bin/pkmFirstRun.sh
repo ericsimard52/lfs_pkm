@@ -1,3 +1,34 @@
+echo "Creating directory skeleton." 
+declare -a dlist_=($/bin /boot $/etc /home /lib /mnt /opt)
+declare -a dsublist_=(/etc/opt /etc/sysconfig /lib/firmware)
+for di_ in ${dlist_[@]}; do
+    echo "Checking if $di_ exists."
+    if [ ! -d $di_ ]; then
+        install -vdm 0755 $di_
+        [ $? -gt 0 ] && return 1
+    else
+        echo "$di_ exists."
+    fi
+done
+for di_ in ${dsublist_[@]}; do
+    echo "Checking if $di_ exists."
+    if [ ! -d $di_ ]; then
+        sudo install -vdm 0755 $di_
+        [ $? -gt 0 ] && return 1
+    else
+        echo "$di_ exists."
+    fi
+done
+
+pushd /bin
+declare -a llist_=(bash cat dd echo ln pwd rm stty)
+declare lbase_="/tools/bin/"
+echo "Checking needed soft link." 
+for li_ in ${llist_[@]}; do
+    echo "Checking $lbase_$li_"
+    [ ! -e $lbase_$li_ ] && ln -sv $lbase_$li_ ./ || echo "$li_ exists."
+done
+popd
 
 mkdir -pv /{media/{floppy,cdrom},sbin,srv,var}
 install -dv -m 0750 /root

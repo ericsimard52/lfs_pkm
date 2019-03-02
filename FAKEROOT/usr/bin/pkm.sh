@@ -1,14 +1,18 @@
 #!/bin/bash
 
 declare CONFIGFILE="/etc/pkm/pkm.conf"
+declare LOGPATH="/var/log/pkm"
 declare SD TD SDN SDNCONF PKG EXT HASBUILDDIR BUILDDIR CONFBASE BYPASSIMPLEMENT WGETURL FAKEROOT
 declare UNPACKCMD
 declare MAKEFLAGS
 declare DEBUG=0
-declare LOGFILE
-declare LOGFILEFD
 declare ISIMPLEMENTED=1 # This changes to 0 when implementation is done.
 declare CURSTATE=0 # Set to 1 to exit program succesfully
+## Location and file descriptor of main & secondary log destination.
+declare LOGFILE LOGFILEFD
+declare SLP="/var/log/pkm"
+declare SECONDARYLOGPATH SECONDARYLOGFILE SECONDARYLOGFD 
+declare SECONDARYLOGACTIVE=1
 
 
 # Config files
@@ -45,13 +49,14 @@ function singleton {
 }
 
 function startLog {
-    if [ ! -f $LOGFILE ]; then
-        log "NULL|INFO|Creating $LOGFILE" t
-         touch $LOGFILE
-         chmod 666 -v $LOGFILE
+    [ ! -d $LOGPATH ] && install -vdm 0777 $LOGPATH
+    if [ ! -f $LOGPATH/$LOGFILE ]; then
+        log "NULL|INFO|Creating $LOGPATH/$LOGFILE" t
+         touch $LOGPATH/$LOGFILE
+         chmod 666 -v $LOGPATH/$LOGFILE
     fi
     log "NULL|INFO|Creating file descriptor for logs" t t
-    exec {LOGFILEFD}>$LOGFILE
+    exec {LOGFILEFD}>$LOGPATH/$LOGFILE
 }
 
 function quitPkm {
@@ -69,6 +74,10 @@ function quitPkm {
 
     unset LOGFILE
     unset LOGFILEFD
+
+    if [ $SECONDARYLOGACTIVE -eq 0 ]; then
+       closeSecondaryLog
+    fi
 
     if [ -f /var/run/pkm/pkm.lock ]; then
         log "GEN|INFO|Removing pkm lock." t
@@ -109,7 +118,7 @@ printf "\e[1mEnvironment Var:\e[0m
 function readConfig {
     log "NULL|INFO|Reading configuration file." t
     if [ ! -f $CONFIGFILE ]; then
-        quitPkm 1 "NULL|ERROR|Configuration file: /etc/pkm/pkm.conf is missing. Do you need to run installManager?"
+        quitPkm 1 "NULL|ERROR|Configuration file: $CONFIGFILE is missing"
     fi
     while read -r line; do
         IFS=':' read -ra PARAM <<< "$line"
@@ -155,18 +164,15 @@ function readConfig {
 
 function processCmd {
     local cmd=""
-    for part in $@; do
-        cmd=$cmd" "$part
-    done
-    log "GEN|INFO|Processing cmd: $cmd"
+    log "GEN|INFO|Processing cmd: $@"
     eval "tput sgr0"
-    if [[ $DEBUG < 1 ]]; then
-        $cmd >&${LOGFILEFD} 2>&1
-    elif [[ $DEBUG > 0 ]]; then
-        $cmd | tee >&${LOGFILEFD} 2>&1
+    if [[ $DEBUG = 0 ]]; then
+        [ $SECONDARYLOGACTIVE -eq 0 ] && $@ >&${SECONDARYLOGFD} 2>&1 || $@ >&${LOGFILEFD} 2>&1
+    elif [[ $DEBUG = 1 ]]; then
+        [ $SECONDARYLOGACTIVE -eq 0 ] && $@ | tee >&${SECONDARYLOGFD} 2>&1 || $@ | tee >&${LOGFILEFD} 2>&1
     fi
     if [ $? -gt 0 ]; then
-       log "GEN|ERROR|Error processcing cmd $cmd" t
+       log "GEN|ERROR|Error processcing cmd $@" t
        return 1
     fi
     return
@@ -193,7 +199,7 @@ function log {
     case "${PARTS[1]}" in
         INFO)
             _LEVEL=INFO
-            _COLOR="\e[35m"
+            _COLOR="\e[39m"
             ;;
         WARNING)
             _LEVEL=WARNING
@@ -212,7 +218,7 @@ function log {
     ### Append message provided by caller
     _M="${PARTS[2]}"
     if [[ "$_M" = "" ]]; then
-        log "NULL|ERROR|Empty log message?!?!" t
+        return
     fi
 
     if [ $SDN ]; then
@@ -226,6 +232,12 @@ function log {
     _LOGMSG=$_LEVEL" - "$_CALLERLOG":"$_M$_MSGEND
 
     # Printo stdOut
+    if [ $SECONDARYLOGACTIVE -eq 0 ]; then
+        [ ${SECONDARYLOGFD} ] && echo $_LOGMSG >&${SECONDARYLOGFD}
+    else
+        [ ${LOGFILEFD} ] && echo $_LOGMSG >&${LOGFILEFD}
+    fi
+
     [ ${LOGFILEFD} ] && echo $_LOGMSG >&${LOGFILEFD}
     if [[ $2 ]] && [[ "$2" = "t" ]]; then # if t after message, print to stdout
         echo -e $_MSG
@@ -493,6 +505,9 @@ function loadPkg {
         BUILDDIR=$SD/$SDN
     fi
     log "PKG|INFO|buildDir set: $BUILDDIR." t
+    # Secondary log setup
+    SECONDARYLOGPATH=$SLP/$SDN
+    [ ! -d $SECONDARYLOGPATH ] && processCmd "install -vdm 777 $SECONDARYLOGPATH"
 
     # Adjusting the unpack commands
     log "GEN|INFO|Adjusting unpack command for $EXT." t
@@ -516,6 +531,8 @@ function loadPkg {
 
 function unloadPkg {
     unset -v PKG SDNCONF TF SDN HASBUILDDIR BUILDDIR LD EXT UNPACKCMD BANNER GENCONFIGFILE DEPCHECKCMDFILE PRECONFIGCMDFILE CONFIGCMDFILE COMPILECMDFILE CHECKCMDFILE PREINSTALLCMDFILE INSTALLCMDFILE PREIMPLEMENTCMDFILE POSTIMPLEMENTCMDFILE CMDFILELIST PRECONFIGCMD CONFIGCMD COMPILECMD CHECKCMD PREINSTALLCMD INSTALLCMD PREIMPLEMENTCMD POSTIMPLEMENTCMD AUTOINSTALLCMDLIST
+    SECONDARYLOGPATH=$SLP
+    SECONDARYLOGACTIVE=1
     ISIMPLEMENTED=1
 }
 
@@ -711,14 +728,54 @@ function requestHostBackup {
     return 0
 }
 
+function setupSecondaryLog {
+    log "NULL|INFO|Setting up secondary log." t
+    if [ ! $1 ]; then
+       log "NULL|WARNING|Call to set secndary log, no parameters provided." t
+       return 1
+    fi
+    SECONDARYLOGFILE=$1
+    if [ ! -e $SECONDARYLOGPATH/$SECONDARYLOGFILE ]; then
+       log "NULL|INFO|$SECONDARYLOGFILE does not exists. Creating." t
+       processCmd "touch $SECONDARYLOGPATH/$SECONDARYLOGFILE"
+       processCmd "chmod 666 $SECONDARYLOGPATH/$SECONDARYLOGFILE"
+    fi
+    exec {SECONDARYLOGFD}>$SECONDARYLOGPATH/$SECONDARYLOGFILE
+    if [ $? -gt 0 ]; then
+        log "NULL|ERROR|Error setting up file descriptor for $SECONDARYLOGPATH/$SECONDARYLOGFILE"
+        return 1
+    fi
+    log "NULL|INFO|Secondary log activated. All log will go in $SECONDARYLOGPATH/$SECONDARYLOGFILE." t
+    SECONDARYLOGACTIVE=0
+    return 0
+}
+
+function closeSecondaryLog {
+    log "NULL|INFO|Closing secondary log." t
+    [ ${SECONDARYLOGFD} ] && exec {SECONDARYLOGFD}>&-
+    if [ $? -gt 0 ]; then
+        log "NULL|ERROR|Error closing file descriptor: for $SECONDARYLOGPATH/$SECONDARYLOGFILE"
+        return 1
+    fi
+    SECONDARYLOGACTIVE=1
+    SECONDARYLOGFILEPATH=$SLP
+    unset SECONDARYLOGFILE
+    log "NULL|INFO|Secondary log deactivated." t
+    return 0
+}
+
 function evalPrompt {
     case $1 in
         unpack)
+            setupSecondaryLog "unpack.log"
             unpack
+            closeSecondaryLog
             ;;
         depcheck)
+            setupSecondaryLog "depcheck.log"
             log "GEN|INFO|Running dependency check scripts" t
             sourceScript "${DEPCHECKCMDFILE}"
+            closeSecondaryLog
             ;;
         preconfig)
             if [ $HASBUILDDIR -lt 1 ]; then
@@ -726,59 +783,77 @@ function evalPrompt {
             else
                 mPush $BUILDDIR
             fi
-            sourceScript "${PRECONFIGCMDFILE}"
+            setupSecondaryLog "preconfig.log"
             log "GEN|INFO|Running pre-config scripts" t
+            sourceScript "${PRECONFIGCMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         config)
+            setupSecondaryLog "config.log"
             log "GEN|INFO|Running config scripts ${CONFIGCMDFILE}" t
             mPush $BUILDDIR
             sourceScript "${CONFIGCMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         compile)
+            setupSecondaryLog "compile.log"
             log "GEN|INFO|Running compile scripts" t
             mPush $BUILDDIR
             sourceScript "${COMPILECMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         check)
+            setupSecondaryLog "check.log"
             log "GEN|INFO|Running check scripts" t
             mPush $BUILDDIR
             sourceScript "${CHECKCMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         preinstall)
+            setupSecondaryLog "preinstall.log"
             log "GEN|INFO|Running PreInstall scripts" t
             mPush $BUILDDIR
             sourceScript "${PREINSTALLCMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         install)
+            setupSecondaryLog "install.log"
             log "GENINFO|Running install scripts" t
             mPush $BUILDDIR
             sourceScript "${INSTALLCMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         preimplement)
+            setupSecondaryLog "preimplement.log"
             log "GEN|INFO|Running preImplement scripts" t
             mPush $BUILDDIR
             sourceScript "${PREIMPLEMENTCMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         implement)
+            setupSecondaryLog "implement.log"
             if [[ $BYPASSIMPLEMENT < 1 ]]; then
                 log "{GEN,PKG}|WARNING|bypassImplement flag is set, unable to proceed with implement request." t
                 return 1
             fi
             log "GEN|INFO|Running implement procedure." t
             implementPkg
+            closeSecondaryLog
             ;;
         postimplement)
+            setupSecondaryLog "postImplement.log"
             log "GEN|INFO|Running PostImplement scripts" t
             mPush $BUILDDIR
             sourceScript "${POSTIMPLEMENTCMDFILE}"
             mPop
+            closeSecondaryLog
             ;;
         autoinstall)
             autoInstall
@@ -842,12 +917,12 @@ function quitPkm {
     [ $? -gt 0 ] && echo "ERROR with unMountLfs, CHECK YOUR SYSTEM." && ret=1
 
     log "GEN|INFO|Closing logs." t
-    [ ${GENLOGFD} ] && exec {GENLOGFD}>&-
-    [ ${PKGLOGFD} ] && exec {PKGLOGFD}>&-
-    [ ${ERRLOGFD} ] && exec {ERRLOGFD}>&-
+    [ ${LOGFILEFD} ] && exec {LOGFILEFD}>&-
 
-    unset GENLOGFILE PKGLOGFILE ERRLOGFILE
-    unset GENLOGFD PKGLOGFD ERRLOGFD
+    unset LOGFILE LOGFILEFD
+    if [ $SECONDARYLOGACTIVE -eq 0 ]; then
+       closeSecondaryLog
+    fi
 
     if [ -f /var/run/pkm/pkm.lock ]; then
         log "GEN|INFO|Removing pkm lock." t
