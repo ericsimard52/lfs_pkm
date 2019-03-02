@@ -1,35 +1,4 @@
-echo "Creating directory skeleton." 
-declare -a dlist_=($/bin /boot $/etc /home /lib /mnt /opt)
-declare -a dsublist_=(/etc/opt /etc/sysconfig /lib/firmware)
-for di_ in ${dlist_[@]}; do
-    echo "Checking if $di_ exists."
-    if [ ! -d $di_ ]; then
-        install -vdm 0755 $di_
-        [ $? -gt 0 ] && return 1
-    else
-        echo "$di_ exists."
-    fi
-done
-for di_ in ${dsublist_[@]}; do
-    echo "Checking if $di_ exists."
-    if [ ! -d $di_ ]; then
-        sudo install -vdm 0755 $di_
-        [ $? -gt 0 ] && return 1
-    else
-        echo "$di_ exists."
-    fi
-done
-
-pushd /bin
-declare -a llist_=(bash cat dd echo ln pwd rm stty)
-declare lbase_="/tools/bin/"
-echo "Checking needed soft link." 
-for li_ in ${llist_[@]}; do
-    echo "Checking $lbase_$li_"
-    [ ! -e $lbase_$li_ ] && ln -sv $lbase_$li_ ./ || echo "$li_ exists."
-done
-popd
-
+mkdir -pv /{bin,boot,etc/{opt,sysconfig},home,lib/firmware,mnt,opt}
 mkdir -pv /{media/{floppy,cdrom},sbin,srv,var}
 install -dv -m 0750 /root
 install -dv -m 1777 /tmp /var/tmp
@@ -48,23 +17,15 @@ ln -sv /run /var/run
 ln -sv /run/lock /var/lock
 mkdir -pv /var/{opt,cache,lib/{color,misc,locate},local}
 
-ln -sv /tools/bin/{env,install,perl} /usr/bin
-ln -sv /tools/lib/libgcc_s.so{,.1} /usr/lib
-ln -sv /tools/lib/libstdc++.{a,so{,.6}} /usr/lib
-for lib in blkid lzma mount uuid
-do
-    ln -sv /tools/lib/lib$lib.so* /usr/lib
-done
-ln -svf /tools/include/blkid    /usr/include
-ln -svf /tools/include/libmount /usr/include
-ln -svf /tools/include/uuid     /usr/include
+ln -sv /tools/bin/{bash,cat,chmod,dd,echo,ln,mkdir,pwd,rm,stty,touch} /bin
+ln -sv /tools/bin/{env,install,perl,printf}         /usr/bin
+ln -sv /tools/lib/libgcc_s.so{,.1}                  /usr/lib
+ln -sv /tools/lib/libstdc++.{a,so{,.6}}             /usr/lib
+
 install -vdm755 /usr/lib/pkgconfig
-for pc in blkid mount uuid
-do
-    sed 's@tools@usr@g' /tools/lib/pkgconfig/${pc}.pc \
-        > /usr/lib/pkgconfig/${pc}.pc
-done
+
 ln -sv bash /bin/sh
+
 ln -sv /proc/self/mounts /etc/mtab
 cat > /etc/passwd << "EOF"
 root:x:0:0:root:/root:/bin/bash
@@ -100,5 +61,6 @@ nogroup:x:99:
 users:x:999:
 EOF
 
-[ ! -d /var/log/pkm ] && install -vdm 777 /var/log/pkm
-[ ! -d /var/log/pkm/implementationLogs ] && install -vdm 777 /var/log/pkm/implementationLogs
+[ ! -d /var/log/pkm ] && install -vdm 0777 /var/log/pkm
+[ ! -d /var/run/pkm ] && install -vdm 0777 /var/run/pkm
+[ ! -d /var/log/pkm/implementationLogs ] && install -vdm 0777 /var/log/pkm/implementationLogs
