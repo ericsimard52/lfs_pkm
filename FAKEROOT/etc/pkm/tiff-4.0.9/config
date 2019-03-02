@@ -1,3 +1,0 @@
-cmake -DCMAKE_INSTALL_DOCDIR=/usr/share/doc/libtiff-4.0.9 \
-  -DCMAKE_INSTALL_PREFOX=/usr -G Ninja ..
-  

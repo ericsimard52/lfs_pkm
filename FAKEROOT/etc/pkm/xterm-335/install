@@ -1,5 +1,0 @@
-sudo make DESTDIR=$FAKEROOT/$sdn install
-sudo make DESTDIR=$FAKEROOT/$sdn install-ti
-sudo mkdir -pv /usr/share/applications
-sudo cp -v *.desktop /usr/share/applications/
-  

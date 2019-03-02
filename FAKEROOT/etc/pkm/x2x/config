@@ -1,3 +1,0 @@
-./bootstrap.sh
-./configure --prefix=/usr
-  

@@ -1,4 +1,0 @@
-./configure --prefix=/usr \
-            --enable-cpluplus \
-            --disable-static \
-            --docdir=/usr/share/doc/gc-7.6.4

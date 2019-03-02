@@ -1,3 +1,0 @@
-pushd wpa_supplicant
-make BINDIR=/sbin LIBDIR=/lib
-popd wpa_supplicant

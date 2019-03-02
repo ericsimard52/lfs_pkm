@@ -1,3 +1,0 @@
-./configure --libexecdir=/lib/dhcpcd \
---dbdir=/var/lib/dhcpcd
-

@@ -1,3 +1,0 @@
-install -vdm755 $FAKEROOT/$sdn
-make DESTDIR=$FAKEROOT/$sdn install
-

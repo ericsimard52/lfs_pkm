@@ -1,5 +1,0 @@
-./configure --prefix=/usr                     \
-            --sysconfdir=/etc/ssh             \
-            --with-md5-passwords              \
-            --with-privsep-path=/var/lib/sshd
-  

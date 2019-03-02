@@ -1,3 +1,0 @@
-make
-make -C xdemos DEMOS_PREFIX=$XORG_PREFIX
-    

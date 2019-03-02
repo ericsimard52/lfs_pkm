@@ -1,2 +1,0 @@
-sudo make DESTDIR=$FAKEROOT/$sdn install
-sudo chmod -v 755 $FAKEROOT/$sdn/usr/lib/libpython2.7.so.1.0

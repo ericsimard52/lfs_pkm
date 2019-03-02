@@ -1,2 +1,0 @@
-env LC_ALL=C make check 2&>1 | tee ../make-check.log
-grep failed ../make-check.log

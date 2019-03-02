@@ -1,2 +1,0 @@
-bin/ctest -j3 -O cmake-3.12.1-test.log
-  

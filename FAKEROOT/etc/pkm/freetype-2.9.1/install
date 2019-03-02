@@ -1,2 +1,0 @@
-sudo make DESTDIR=$FAKEROOT/$sdn install
-sudo cp -v builds/unix/freetype-config $FAKEROOT/$sdn/usr/bin

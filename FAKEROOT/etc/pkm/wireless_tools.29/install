@@ -1,2 +1,0 @@
-make PREFIX=$FAKEROOT/$sdn/usr INSTALL_MAN=$FAKEROOT/$sdn/usr/share/man install
-

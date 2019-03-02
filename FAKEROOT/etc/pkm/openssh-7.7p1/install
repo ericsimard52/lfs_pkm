@@ -1,7 +1,0 @@
-sudo make DESTDIR=$FAKEROOT/$sdn install
-sudo install -v -m755    contrib/ssh-copy-id $FAKEROOT/$sdn/usr/bin
-sudo install -v -m644    contrib/ssh-copy-id.1 \
-                    $FAKEROOT/$sdn/usr/share/man/man1
-sudo sudo install -v -m755 -d $FAKEROOT/$sdn/usr/share/doc/openssh-7.7p1
-sudo install -v -m644    INSTALL LICENCE OVERVIEW README* \
-                    $FAKEROOT/$sdn/usr/share/doc/openssh-7.7p1

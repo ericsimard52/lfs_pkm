@@ -1,4 +1,0 @@
-sudo make DESTDIR=$FAKEROOT/$sdn install
-sudo install -vdm755 $FAKEROOT/$sdn/etc/acpi/events
-sudo cp -r samples $FAKEROOT/$sdn/usr/share/doc/acpid-2.0.30
-  

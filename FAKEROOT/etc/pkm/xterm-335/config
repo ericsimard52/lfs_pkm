@@ -1,3 +1,0 @@
-TERMINFO=/usr/share/terminfo \
-        ./configure $XORG_CONFIG \
-        --with-app-defaults=/etc/X11/app-defaults

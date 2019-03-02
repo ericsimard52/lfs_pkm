@@ -1,2 +1,0 @@
-./configure --prefix=/usr --with-default-trust-store="ppkcs11:"
-  

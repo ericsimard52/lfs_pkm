@@ -1,2 +1,0 @@
-sed -i "s/pthread-stubs//" configure
-./configure $XORG_CONFIG --without-doxygen --docdir='${datadir}'/doc/libxcb-1.23

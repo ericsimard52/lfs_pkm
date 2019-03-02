@@ -1,7 +1,0 @@
-make DESTDIR=$FAKEROOT/$sdn \
-PREFIX=/usr \
-SHAREDIR=/usr/share/hwdata \
-SHARED=yes \
-install install-lib
-chmod -v 755 $FAKEROOT/$sdn/usr/lib/libpci.so
-

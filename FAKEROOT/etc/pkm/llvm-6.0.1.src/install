@@ -1,2 +1,0 @@
-processCmd "sudo DESTDIR=$FAKEROOT/$sdn ninja install"
-  

@@ -1,8 +1,0 @@
-echo "XORG_CONFIG:$XORG_CONFIG"
-read cc
-case $cc in
-    [nN])
-        exit 1
-        ;;
-esac
-./configure  --prefix=/usr --sysconfdir=/etc --localstatedir=/var

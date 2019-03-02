@@ -1,6 +1,0 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN install"
-[ $? -gt 0 ] && return 1
-processCmd "chmod -v 755 $FAKEROOT/$SDN/usr/lib/libpython3.7m.so"
-processCmd "chmod -v 755 $FAKEROOT/$SDN/usr/lib/libpython3.so"
-return 0
-

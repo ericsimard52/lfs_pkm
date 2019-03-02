@@ -1,6 +1,0 @@
-patch -Np1 -i ../libxml2-2.9.8-python3_hack-1.patch
-sed -i '/_PyVerify_fd/,+ld' python/types.c
-  ./configure --prefix=/usr \
-            --disable-static \
-            --with-history \
-            --with-python=/usr/bin/python3
