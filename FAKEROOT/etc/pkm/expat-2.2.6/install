@@ -1,6 +1,8 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+CMD=( make DESTDIR=$FAKEROOT/$SDN install )
+processCmd
 [ $? -gt 0 ] && return 1
 
-processCmd "install -v -m644 doc/*.{html,png,css} $FAKEROOT/$SDN/usr/share/doc/expat-2.2.6"
+CMD=( install -v -m644 doc/*."{html,png,css}" $FAKEROOT/$SDN/usr/share/doc/expat-2.2.6 )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0

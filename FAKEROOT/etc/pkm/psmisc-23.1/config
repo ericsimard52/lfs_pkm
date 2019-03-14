@@ -1,4 +1,5 @@
-processCmd "./configure --prefix=/usr"
+CMD=( ./configure --prefix=/usr )
+  processCmd
 [ $? -gt 0 ] && return 1
 return 0
   

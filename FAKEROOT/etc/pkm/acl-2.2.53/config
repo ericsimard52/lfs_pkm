@@ -1,8 +1,5 @@
-processCmd "./configure --prefix=/usr         \
-            --bindir=/bin         \
-            --disable-static      \
-            --libexecdir=/usr/lib \
-            --docdir=/usr/share/doc/acl-2.2.53"
+CMD=( ./configure --prefix=/usr --bindir=/bin --disable-static --libexecdir=/usr/lib --docdir=/usr/share/doc/acl-2.2.53 )
+processCmd
 [ $? -gt 0 ] &&  return 1
 return 0
   

@@ -1,8 +1,12 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+CMD=( make DESTDIR=$FAKEROOT/$SDN install )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "mkdir $FAKEROOT/$SDN/{bin,lib}"
-processCmd "mv -v   $FAKEROOT/$SDN/usr/bin/{lzma,unlzma,lzcat,xz,unxz,xzcat} $FAKEROOT/$SDN/bin"
-processCmd "mv -v $FAKEROOT/$SDN/usr/lib/liblzma.so.* $FAKEROOT/$SDN/lib"
+CMD=( mkdir $FAKEROOT/$SDN/{bin,lib} )
+processCmd
+CMD=( mv -v   $FAKEROOT/$SDN/usr/bin/{lzma,unlzma,lzcat,xz,unxz,xzcat} $FAKEROOT/$SDN/bin )
+processCmd
+CMD=( mv -v $FAKEROOT/$SDN/usr/lib/liblzma.so.* $FAKEROOT/$SDN/lib )
+processCmd
 return 0
 
 

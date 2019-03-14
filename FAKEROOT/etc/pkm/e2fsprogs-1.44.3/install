@@ -1,7 +1,12 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN install"
-processCmd "make DESTDIR=$FAKEROOT/$SDN install-libs"
-processCmd "chmod -v u+w $FAKEROOT/$SDN/usr/lib/{libcom_err,libe2p,libext2fs,libss}.a"
-processCmd "gunzip -v $FAKEROOT/$SDN/usr/share/info/libext2fs.info.gz"
-processCmd "install-info --dir-file=/usr/share/info/dir $FAKEROOT/$SDN/usr/share/info/libext2fs.info"
+CMD=( make DESTDIR=$FAKEROOT/$SDN install )
+processCmd
+CMD=( make DESTDIR=$FAKEROOT/$SDN install-libs )
+processCmd
+CMD=( chmod -v u+w $FAKEROOT/$SDN/usr/lib/"{libcom_err,libe2p,libext2fs,libss}".a )
+processCmd
+CMD=( gunzip -v $FAKEROOT/$SDN/usr/share/info/libext2fs.info.gz )
+processCmd
+CMD=( install-info --dir-file=/usr/share/info/dir $FAKEROOT/$SDN/usr/share/info/libext2fs.info )
+processCmd
 return 0
 

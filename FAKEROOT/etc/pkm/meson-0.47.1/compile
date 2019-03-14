@@ -1,4 +1,5 @@
-processCmd "python3 setup.py build"
+CMD=( python3 setup.py build )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

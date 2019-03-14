@@ -1,18 +1,20 @@
-processCmd "ln -sv ../usr/bin/cpp /lib"
+CMD=( ln -sv ../usr/bin/cpp /lib )
+processCmd
 
-processCmd "ln -sv gcc /usr/bin/cc"
+CMD=( ln -sv gcc /usr/bin/cc )
+processCmd
 
-processCmd "ln -sfv ../../libexec/gcc/$(gcc -dumpmachine)/8.2.0/liblto_plugin.so \
-        /usr/lib/bfd-plugins/"
+CMD=( ln -sfv ../../libexec/gcc/$(gcc -dumpmachine)/8.2.0/liblto_plugin.so /usr/lib/bfd-plugins/ )
+processCmd
 
 
 log "GEN|INFO|Creating dummy c code." t
-processCmd "echo 'int main(){}' > dummy.c"
+echo 'int main(){}' > dummy.c
 log "GEN|INFO|Attempting to compile." t
 cc dummy.c -v -Wl,--verbose &> dummy.log
 [ $? -gt 0 ] && log "GEN|ERROR|Error compiling." t && return 1
 
-processCmd "readelf -l a.out | grep ': /lib'"
+readelf -l a.out | grep ': /lib'
 [ $? -gt 0 ] && return 1
 declare rs_=`readelf -l a.out | grep ': /lib'`
 ## Need better testing here
@@ -61,6 +63,7 @@ if [ ! "$rs_" == "found ld-linux-x86-64.so.2 at /lib/ld-linux-x86-64.so.2" ]; th
     return 1
 fi
 
-processCmd "rm -v dummy.c a.out dummy.log"
+CMD=( rm -v dummy.c a.out dummy.log )
+processCmd
 return 0
 

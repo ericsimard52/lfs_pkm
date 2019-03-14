@@ -1,7 +1,5 @@
-processCmd "./configure --prefix=/usr                       \
-            --docdir=/usr/share/doc/bash-4.4.18 \
-            --without-bash-malloc               \
-            --with-installed-readline"
+CMD=( ./configure --prefix=/usr --docdir=/usr/share/doc/bash-4.4.18 --without-bash-malloc --with-installed-readline )
+  processCmd
 [ $? -gt 0 ] && return 1
 return 0
   

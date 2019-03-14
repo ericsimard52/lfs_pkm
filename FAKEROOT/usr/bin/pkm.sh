@@ -13,7 +13,7 @@ declare LOGFILE LOGFILEFD
 declare SLP="/var/log/pkm"
 declare SECONDARYLOGPATH SECONDARYLOGFILE SECONDARYLOGFD 
 declare SECONDARYLOGACTIVE=1
-
+declare CMD
 
 # Config files
 declare GENCONFIGFILE DEPCHECKCMDFILE PRECONFIGCMDFILE CONFIGCMDFILE COMPILECMDFILE CHECKCMDFILE
@@ -163,19 +163,36 @@ function readConfig {
 }
 
 function processCmd {
-    local cmd=""
-    log "GEN|INFO|Processing cmd: $@"
+    printf -v cmd_str '%q ' "${CMD[@]}"
+    log "GEN|INFO|Processing cmd: $cmd_str" t
     eval "tput sgr0"
-    if [[ $DEBUG = 0 ]]; then
-        [ $SECONDARYLOGACTIVE -eq 0 ] && $@ >&${SECONDARYLOGFD} 2>&1 || $@ >&${LOGFILEFD} 2>&1
-    elif [[ $DEBUG = 1 ]]; then
-        [ $SECONDARYLOGACTIVE -eq 0 ] && $@ | tee >&${SECONDARYLOGFD} 2>&1 || $@ | tee >&${LOGFILEFD} 2>&1
+    if [ $DEBUG -eq 1 ]; then
+        if [ $SECONDARYLOGACTIVE -eq 0 ]; then
+            "${CMD[@]}" >&${SECONDARYLOGFD} 2>&${SECONDARYLOGFD}
+        else
+            "${CMD[@]}" >&${LOGFILEFD} 2>&${LOGFILEFD}
+        fi
+        if [ $? -gt 0 ]; then
+            log "GEN|ERROR|Error processcing $cmd_str" t
+            unset CMD
+            return 1
+        fi
+
+    elif [ $DEBUG -eq 0 ]; then
+        if [ $SECONDARYLOGACTIVE -eq 0 ]; then
+            "${CMD[@]}" 2>&1 | tee >( cat >&${SECONDARYLOGFD} )
+        else
+            "${CMD[@]}" 2>&1 | tee >( cat >&${LOGFILEFD} 2>&1 )
+        fi
+        if [ ${PIPESTATUS[0]} -gt 0 ]; then
+            log "GEN|ERROR|Error processcing $cmd_str" t
+            unset CMD
+            return 1
+        fi
+
     fi
-    if [ $? -gt 0 ]; then
-       log "GEN|ERROR|Error processcing cmd $@" t
-       return 1
-    fi
-    return
+    unset CMD
+    return 0
 }
 
 function log {
@@ -254,9 +271,11 @@ function promptUser {
 }
 
 function checkInstalled {
-    processCmd "command -v $1"
+    CMD=( command -v $1 )
+    processCmd
     if [[ $? > 0 ]]; then
-        processCmd "locate $1"
+        CMD=( locate $1 )
+        processCmd
         [ $? -gt 0 ] && return 1
     fi
     return 0
@@ -485,7 +504,8 @@ function loadPkg {
     if [ ! -f $SD/$TF ]; then
         log "PKG|WARNING|Why are we doing this?" t
         log "{GEN,ERR}|WARNING|Package $tf not found in source $SD, creating." t
-        processCmd " install -vm664 $DEVBASE/sources/$TF $SD/$TF"
+        CMD=( install -vm664 $DEVBASE/sources/$TF $SD/$TF )
+        processCmd
         return
     fi
 
@@ -498,7 +518,8 @@ function loadPkg {
         log "GEN|INFO|Checking if build dir: $BUILDDIR exists." t
         if [ ! -d "$BUILDIR" ]; then
             log "GEN|WARNING|Build directory flag set, but dir does not exist, creating..." t
-            processCmd "install -vdm755 $BUILDDIR"
+            CMD=( install -vdm755 $BUILDDIR )
+            processCmd
             [ $? -gt 0 ] && log "{PKG,ERR}|ERROR|Error creating $BUILDDIR." t && return 1
         fi
     else
@@ -507,25 +528,25 @@ function loadPkg {
     log "PKG|INFO|buildDir set: $BUILDDIR." t
     # Secondary log setup
     SECONDARYLOGPATH=$SLP/$SDN
-    [ ! -d $SECONDARYLOGPATH ] && processCmd "install -vdm 777 $SECONDARYLOGPATH"
+    [ ! -d $SECONDARYLOGPATH ] && CMD=( install -vdm 777 $SECONDARYLOGPATH ) && processCmd
 
     # Adjusting the unpack commands
     log "GEN|INFO|Adjusting unpack command for $EXT." t
     if [[ "$EXT" == "xz" ]]; then
-        UNPACKCMD="tar xvf $TF"
+        UNPACKCMD=( tar xvf $TF )
     elif [[ "$EXT" == "gz" ]]; then
-        UNPACKCMD="tar xvfz $TF"
+        UNPACKCMD=( tar xvfz $TF )
     elif [[ "$EXT" == "gzip" ]]; then
-        UNPACKCMD="tar xvfz $TF"
+        UNPACKCMD=( tar xvfz $TF )
     elif [[ "$EXT" == "bz2" ]]; then
-        UNPACKCMD="tar xvfj $TF"
+        UNPACKCMD=( tar xvfj $TF )
     elif [[ "$EXT" == "tgz" ]]; then
-        UNPACKCMD="tar xvfz $TF"
+        UNPACKCMD=( tar xvfz $TF )
     else
         log "ERR|FATAL|Unknown package unpack method." true
         return 0
     fi
-    log "PKG|INFO|unpackCmd set: $UNPACKCMD." t
+    log "PKG|INFO|unpackCmd set." t
     return 0
 }
 
@@ -534,6 +555,7 @@ function unloadPkg {
     SECONDARYLOGPATH=$SLP
     SECONDARYLOGACTIVE=1
     ISIMPLEMENTED=1
+    return 0
 }
 
 function unpack {
@@ -543,14 +565,32 @@ function unpack {
         log "{GEN,PKG,ERR}|FATAL|$TF not found." t
         return 1
     fi
-
-    log "PKG|INFO|Running Cmd: $UNPACKCMD" t t
+    printf -v cmd_str '%q ' "${UNPACKCMD[@]}"
+    log "PKG|INFO|Running Cmd: $cmd_str" t
     mPush $SD
-    processCmd "${UNPACKCMD}"
-    [ $? -gt 0 ] && log "{PKG,ERR}|ERROR|Error unpacking with $UNPACKCMD" t && mPop &&  return 1
+
+    if [ $DEBUG -eq 1 ]; then
+        if [ $SECONDARYLOGACTIVE -eq 0 ]; then
+            "${UNPACKCMD[@]}" >&${SECONDARYLOGFD} 2>&${SECONDARYLOGFD}
+        else
+            "${UNPACKCMD[@]}" >&${LOGFILEFD} 2>&${LOGFILEFD}
+        fi
+    elif [ $DEBUG -eq 0 ]; then
+        if [ $SECONDARYLOGACTIVE -eq 0 ]; then
+            "${UNPACKCMD[@]}" 2>&1 | tee >( cat >&${SECONDARYLOGFD} )
+        else
+            "${UNPACKCMD[@]}" 2>&1 | tee >( cat >&${LOGFILEFD} 2>&1 )
+        fi
+    fi
+    if [ $? -gt 0 ]; then
+        log "GEN|ERROR|Error processcing cmd $@" t
+        return 1
+    fi
+
+    [ $? -gt 0 ] && log "{PKG,ERR}|ERROR|Error unpacking with $cmd_str" t && mPop &&  return 1
     if [ $HASBUILDDIR == 0 ] && [ ! -d $SD/$SDN/build ]; then
         log "PKG|INFO|Creating build directory" t
-        processCmd "install -oroot -groot -vdm755 $SD/$SDN/build"
+        CMD=( install -oroot -groot -vdm755 $SD/$SDN/build )
         [ $? -gt 0 ] && log "{PKG,ERR}|ERROR|Error creating build directory" t && mPop && return 1
     fi
 
@@ -632,24 +672,26 @@ function sourceScript {
 }
 
 function implementPkg {
-    mPush $FAKEROOT/$SDN
-    log "{GEN,IMP}|INFO|Setting file in system" t
-    processCmd "tar cf - . | (cd / ; tar xvf - )"
-    [ $? -gt 0 ] && log "GEN|ERROR|Error during implementation" t && return 1
-    sed -e 's/total [0-9]*//' < <(ls -lAR) > /var/log/pkm/implementationLogs/$SDN.log
-    [ $? -gt 0 ] && log "GEN|ERROR|Error creating implementation log" t && return 1
-    log "Done implementation." t
-    mPop
-    return 0
-}
+      mPush $FAKEROOT/$SDN
+      log "{GEN,IMP}|INFO|Setting file in system" t
+      tar cf - . | (cd / ; tar xf - )
+      [ $? -gt 0 ] && log "GEN|ERROR|Error during implementation" t && return 1
+      sed -e 's/total [0-9]*//' < <(ls -lAR) > /var/log/pkm/implementationLogs/$SDN.log
+      [ $? -gt 0 ] && log "GEN|ERROR|Error creating implementation log" t && return 1
+      log "Done implementation." t
+      mPop
+      return 0
+  }
 
 function cleanup {
     log "GEN|INFO|Cleaning up source file" t
     mPush $SD
-    processCmd "rm -fr $SDN"
+    CMD=( rm -fr $SDN )
+    processCmd
     [ $? -gt 0 ] && return 1
     mPop
-    processCmd "rm -fr $FAKEROOT/$SDN"
+    CMD=( rm -fr $FAKEROOT/$SDN )
+    processCmd
     [ $? -gt 0 ] && return 1
     return 0
 }
@@ -731,14 +773,16 @@ function requestHostBackup {
 function setupSecondaryLog {
     log "NULL|INFO|Setting up secondary log." t
     if [ ! $1 ]; then
-       log "NULL|WARNING|Call to set secndary log, no parameters provided." t
-       return 1
+        log "NULL|WARNING|Call to set secndary log, no parameters provided." t
+        return 1
     fi
     SECONDARYLOGFILE=$1
     if [ ! -e $SECONDARYLOGPATH/$SECONDARYLOGFILE ]; then
-       log "NULL|INFO|$SECONDARYLOGFILE does not exists. Creating." t
-       processCmd "touch $SECONDARYLOGPATH/$SECONDARYLOGFILE"
-       processCmd "chmod 666 $SECONDARYLOGPATH/$SECONDARYLOGFILE"
+        log "NULL|INFO|$SECONDARYLOGFILE does not exists. Creating." t
+        CMD=( touch $SECONDARYLOGPATH/$SECONDARYLOGFILE )
+        processCmd
+        CMD=( chmod 666 $SECONDARYLOGPATH/$SECONDARYLOGFILE )
+        processCmd
     fi
     exec {SECONDARYLOGFD}>$SECONDARYLOGPATH/$SECONDARYLOGFILE
     if [ $? -gt 0 ]; then
@@ -769,13 +813,17 @@ function evalPrompt {
         unpack)
             setupSecondaryLog "unpack.log"
             unpack
+            res=$?
             closeSecondaryLog
+            return $res
             ;;
         depcheck)
             setupSecondaryLog "depcheck.log"
             log "GEN|INFO|Running dependency check scripts" t
             sourceScript "${DEPCHECKCMDFILE}"
+            res=$?
             closeSecondaryLog
+            return $res
             ;;
         preconfig)
             if [ $HASBUILDDIR -lt 1 ]; then
@@ -786,56 +834,70 @@ function evalPrompt {
             setupSecondaryLog "preconfig.log"
             log "GEN|INFO|Running pre-config scripts" t
             sourceScript "${PRECONFIGCMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         config)
             setupSecondaryLog "config.log"
             log "GEN|INFO|Running config scripts ${CONFIGCMDFILE}" t
             mPush $BUILDDIR
             sourceScript "${CONFIGCMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         compile)
             setupSecondaryLog "compile.log"
             log "GEN|INFO|Running compile scripts" t
             mPush $BUILDDIR
             sourceScript "${COMPILECMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         check)
             setupSecondaryLog "check.log"
             log "GEN|INFO|Running check scripts" t
             mPush $BUILDDIR
             sourceScript "${CHECKCMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         preinstall)
             setupSecondaryLog "preinstall.log"
             log "GEN|INFO|Running PreInstall scripts" t
             mPush $BUILDDIR
             sourceScript "${PREINSTALLCMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         install)
             setupSecondaryLog "install.log"
             log "GENINFO|Running install scripts" t
             mPush $BUILDDIR
             sourceScript "${INSTALLCMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         preimplement)
             setupSecondaryLog "preimplement.log"
             log "GEN|INFO|Running preImplement scripts" t
             mPush $BUILDDIR
             sourceScript "${PREIMPLEMENTCMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         implement)
             setupSecondaryLog "implement.log"
@@ -845,24 +907,32 @@ function evalPrompt {
             fi
             log "GEN|INFO|Running implement procedure." t
             implementPkg
+            res=$?
             closeSecondaryLog
+            return $res
             ;;
         postimplement)
             setupSecondaryLog "postImplement.log"
             log "GEN|INFO|Running PostImplement scripts" t
             mPush $BUILDDIR
             sourceScript "${POSTIMPLEMENTCMDFILE}"
+            res=$?
             mPop
             closeSecondaryLog
+            return $res
             ;;
         autoinstall)
             autoInstall
             ;;
         cleanup)
             cleanup
+            res=$?
+            return $res
             ;;
         loadpkg)
             loadPkg
+            res=$?
+            return $res
             ;;
         unloadpkg)
             unloadPkg
@@ -899,12 +969,12 @@ function evalPrompt {
 }
 
 function prompt {
-    while [[ $CURSTATE == [0] ]]; do
-        promptUser "Input."
-        read -e command
-        evalPrompt $command
-    done
-}
+      while [[ $CURSTATE == [0] ]]; do
+          promptUser "Input."
+          read -e command
+          evalPrompt $command
+      done
+  }
 
 function quitPkm {
     ## First log exit message if present
@@ -934,34 +1004,6 @@ function quitPkm {
     fi
     tput sgr0
     exit $ret
-}
-
-function installPkm {
-    pkmPath_=/opt/Pkm
-    if [ ! -d $pkmPath_ ]; then
-        processCmd " install -vdm 0755 $pkmPath_"
-        [ $? -gt 0 ] && log "GEN|ERROR|Error install $pkmPath_" t && return 1
-
-    fi
-    log "GEN|INFO|Removing old pkm." t
-    processCmd "rm -vfr $pkmPath_/*"
-    mPush $pkmPath_
-    log "GEN|INFO|Downloading Pkm." t
-    processCmd " wget https://github.com/ericsimard52/lfs_pkm/archive/master.zip"
-    [ $? -gt 0 ] && log "GEN|ERROR|Error downloading pkm from https://github.com/ericsimard52/lfs_pkm/archive/master.zip" t && mPop &&return 1
-
-    log "GEN|INFO|Installing Pkm" t
-    processCmd " unzip -o master.zip"
-    [ $? -gt 0 ] && log "GEN|ERROR|Error during unzip master.zip" t && mPop && return 1
-    processCmd " mv lfs_pkm-master Pkm"
-    [ $? -gt 0 ] && log "GEN|ERROR|Error during move" t && mPop && return 1
-    processCmd " chown -cR root:root Pkm"
-    [ $? -gt 0 ] && log "GEN|ERROR|Error during chown" t && mPop && return 1
-    processCmd " rm -v master.zip"
-    [ $? -gt 0 ] && log "GEN|ERROR|Error rm master.zip" t && mPop && return 1
-    processCmd " cp -vfr $pkmPath_/Pkm/FAKEROOT/* /"
-    [ $? -gt 0 ] && log "GEN|ERROR|Error copying pkm in system files." t && mPop && return 1
-    mPop
 }
 
 singleton ## Ensure only one instance runs.

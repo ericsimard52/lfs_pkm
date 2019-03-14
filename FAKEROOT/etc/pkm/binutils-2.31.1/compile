@@ -1,4 +1,5 @@
-processCmd "make tooldir=/usr"
+CMD=( make tooldir=/usr )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

@@ -1,3 +1,4 @@
-processCmd "patch -Np1 -i ../coreutils-8.30-i18n-1.patch"
+CMD=( patch -Np1 -i ../coreutils-8.30-i18n-1.patch )
+processCmd
 sed -i '/test.lock/s/^/#/' gnulib-tests/gnulib.mk
 return 0

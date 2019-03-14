@@ -1,15 +1,14 @@
 log "GEN|INFO|Checking if $FAKEROOT/$SDN/lib exists." t
 if [ ! -d $FAKEROOT/$SDN/lib ]; then
    log "GEN|INFO|Creating." t
-   processCmd "install -vdm 644 $FAKEROOT/$SDN/lib"
+   CMD=( install -vdm 644 $FAKEROOT/$SDN/lib )
+   processCmd
 fi
-log "GEN|INFO|Moving $FAKEROOT/$SDN/usr/lib/... to ../../lib" t
-processCmd "mv -v $FAKEROOT/$SDN/usr/lib/lib{readline,history}.so.* $FAKEROOT/$SDN/lib"
+log "GEN|INFO|Moving $FAKEROOT/$SDN/usr/lib/{readline,history} to $FAKEROOT/$SDN/lib" t
+CMD=( mv -v $FAKEROOT/$SDN/usr/lib/lib{readline,history}.so.* $FAKEROOT/$SDN/lib )
+processCmd
 [ $? -gt 0 ] && return 1
 
 log "GEN|INFO|Fixing permissions." t
-processCmd "chmod -v u+w $FAKEROOT/$SDN/lib/lib{readline,history}.so.*"
-log "GEN|INFO|Creating links." t
-processCmd "ln -sfv $FAKEROOT/$SDN/lib/$(readlink /usr/lib/libreadline.so) $FAKEROOT/$SDN/usr/lib/libreadline.so"
-processCmd "ln -sfv $FAKEROOT/$SDB/lib/$(readlink /usr/lib/libhistory.so ) $FAKEROOT/$SDN/usr/lib/libhistory.so"
+chmod -v u+w $FAKEROOT/$SDN/lib/lib{readline,history}.so.*
 return 0

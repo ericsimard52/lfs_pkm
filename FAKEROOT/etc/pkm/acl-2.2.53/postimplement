@@ -1,2 +1,2 @@
-processCmd "ln -sfv /lib/$(readlink $FAKEROOT/$SDN/usr/lib/libacl.so) /usr/lib/libacl.so"
+ln -sfv /lib/$(readlink $FAKEROOT/$SDN/usr/lib/libacl.so) /usr/lib/libacl.so
 return 0

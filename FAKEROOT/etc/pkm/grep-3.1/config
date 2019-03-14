@@ -1,4 +1,5 @@
-processCmd "./configure --prefix=/usr --bindir=/bin"
+CMD=( ./configure --prefix=/usr --bindir=/bin )
+  processCmd
 [ $? -gt 0 ] && return 1
 return 0
   

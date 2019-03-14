@@ -1,3 +1,4 @@
-processCmd "patch -Np1 -i ../sysvinit-2.90-consolidated-1.patch"
+CMD=( patch -Np1 -i ../sysvinit-2.90-consolidated-1.patch )
+processCmd
 return 0
   

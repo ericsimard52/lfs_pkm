@@ -1,6 +1,7 @@
-processCmd "FORCE_UNSAFE_CONFIGURE=1  \
-./configure --prefix=/usr \
-            --bindir=/bin"
+CMD=( FORCE_UNSAFE_CONFIGURE=1 )
+processCmd
+CMD=( ./configure --prefix=/usr --bindir=/bin )
+processCmd
   [ $? -gt 0 ] && return 1
   return 0
   

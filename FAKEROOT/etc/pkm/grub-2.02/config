@@ -1,8 +1,5 @@
-processCmd "./configure --prefix=/usr          \
-            --sbindir=/sbin        \
-            --sysconfdir=/etc      \
-            --disable-efiemu       \
-            --disable-werror"
+CMD=( ./configure --prefix=/usr --sbindir=/sbin --sysconfdir=/etc --disable-efiemu --disable-werror )
+processCmd
 [ $? -gt 0 ] && return 1
   return 0
   

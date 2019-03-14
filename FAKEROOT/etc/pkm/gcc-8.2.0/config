@@ -1,9 +1,6 @@
-processCmd "SED=sed                               \
-../configure --prefix=/usr            \
-             --enable-languages=c,c++ \
-             --disable-multilib       \
-             --disable-bootstrap      \
-             --disable-libmpx         \
-             --with-system-zlib"
+CMD=( export SED=sed )
+processCmd
+CMD=( ../configure --prefix=/usr --enable-languages=c,c++ --disable-multilib --disable-bootstrap --disable-libmpx --with-system-zlib )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0

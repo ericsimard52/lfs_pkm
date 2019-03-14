@@ -1,5 +1,6 @@
-[ ! -d $FAKEROOT/$SDN/bin ] && processCmd "install -vdm 644 $FAKEROOT/$SDN/bin"
-processCmd "mv -vf $FAKEROOT/$SDN/usr/bin/bash $FAKEROOT/$SDN/bin"
+[ ! -d $FAKEROOT/$SDN/bin ] && CMD=( install -vdm 644 $FAKEROOT/$SDN/bin ) && processCmd
+CMD=( mv -vf $FAKEROOT/$SDN/usr/bin/bash $FAKEROOT/$SDN/bin )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

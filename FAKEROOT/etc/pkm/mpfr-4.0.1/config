@@ -1,6 +1,4 @@
-processCmd "./configure --prefix=/usr        \
-            --disable-static     \
-            --enable-thread-safe \
-            --docdir=/usr/share/doc/mpfr-4.0.1"
+CMD=( ./configure --prefix=/usr --disable-static --enable-thread-safe --docdir=/usr/share/doc/mpfr-4.0.1 )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0

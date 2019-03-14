@@ -10,9 +10,11 @@ sed -e '$ s/$/0}/' \
     -i libmath.h
 EOF
 
-processCmd "ln -sv /tools/lib/libncursesw.so.6 /usr/lib/libncursesw.so.6"
-processCmd "ln -sfv libncurses.so.6 /usr/lib/libncurses.so"
-processCmd "sed -i -e '/flex/s/as_fn_error/: ;; # &/' configure"
+CMD=( ln -sv /tools/lib/libncursesw.so.6 /usr/lib/libncursesw.so.6 )
+processCmd
+CMD=( ln -sfv libncurses.so.6 /usr/lib/libncurses.so )
+processCmd
+sed -i -e '/flex/s/as_fn_error/: ;; # &/' configure
 return 0
 
 

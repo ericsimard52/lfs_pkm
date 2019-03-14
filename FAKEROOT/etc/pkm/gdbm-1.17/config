@@ -1,6 +1,5 @@
-processCmd "./configure --prefix=/usr \
-            --disable-static \
-            --enable-libgdbm-compat"
+CMD=( ./configure --prefix=/usr --disable-static --enable-libgdbm-compat )
+  processCmd
 [ $? -gt 0 ] && return 1
   return 0
   

@@ -1,4 +1,5 @@
-processCmd "make check"
+CMD=( make check )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

@@ -1,4 +1,5 @@
-processCmd "make NON_ROOT_USERNAME=nobody check-root"
+CMD=( make NON_ROOT_USERNAME=nobody check-root )
+processCmd
 echo "dummy:x:1000:nobody" >> /etc/group
 chown -Rv nobody .
 su nobody -s /bin/bash \

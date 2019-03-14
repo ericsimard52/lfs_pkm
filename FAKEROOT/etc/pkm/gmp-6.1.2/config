@@ -1,6 +1,4 @@
-processCmd "./configure --prefix=/usr    \
-            --enable-cxx     \
-            --disable-static \
-            --docdir=/usr/share/doc/gmp-6.1.2"
+CMD=( ./configure --prefix=/usr --enable-cxx --disable-static --docdir=/usr/share/doc/gmp-6.1.2 )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0

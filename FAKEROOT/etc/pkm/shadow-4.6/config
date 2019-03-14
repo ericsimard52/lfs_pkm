@@ -1,4 +1,5 @@
-processCmd "./configure --sysconfdir=/etc --with-group-name-max-length=32"
+CMD=( ./configure --sysconfdir=/etc --with-group-name-max-length=32 )
+  processCmd
 [ $? -gt 0 ] && return 1
 return 0
   

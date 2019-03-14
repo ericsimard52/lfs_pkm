@@ -1,4 +1,5 @@
-processCmd "./configure --prefix=/usr --disable-static"
+CMD=( ./configure --prefix=/usr --disable-static )
+  processCmd
   [ $? -gt 0 ] && return 1
   return 0
   

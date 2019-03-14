@@ -1,6 +1,5 @@
-processCmd "./configure --prefix=/usr    \
-            --disable-static \
-            --docdir=/usr/share/doc/gettext-0.19.8.1"
+CMD=( ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/gettext-0.19.8.1 )
+  processCmd
 [ $? -gt 0 ] && return 1
   return 0
   

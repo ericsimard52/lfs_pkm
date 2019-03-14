@@ -1,6 +1,8 @@
-processCmd "make -f Makefile-libbz2_so"
+CMD=( make -f Makefile-libbz2_so )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "make clean"
+CMD=( make clean )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
   

@@ -1,4 +1,5 @@
-processCmd "./configure --prefix=/usr --localstatedir=/var/lib/locate"
+CMD=( ./configure --prefix=/usr --localstatedir=/var/lib/locate )
+  processCmd
   [ $? -gt 0 ] && return 1
   return 0
   

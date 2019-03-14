@@ -1,5 +1,8 @@
-processCmd "PKG_CONFIG_PATH=/tools/lib/pkgconfig ./configure --prefix=/usr --disable-vlock"
-  [ $? -gt 0 ] && return 1
-  return 0
+CMD=( PKG_CONFIG_PATH=/tools/lib/pkgconfig )
+processCmd
+CMD=( ./configure --prefix=/usr --disable-vlock )
+processCmd
+[ $? -gt 0 ] && return 1
+return 0
   
   

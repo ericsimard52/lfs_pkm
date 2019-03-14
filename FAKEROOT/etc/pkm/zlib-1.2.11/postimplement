@@ -1,3 +1,4 @@
-processCmd "ln -sfv ../../lib/$(readlink /usr/lib/libz.so) /usr/lib/libz.so"
-[ $? -gt 0 ] && log "GEN|ERROR|Error creating link" t && return 1
+ln -sfv ../../lib/$(readlink /usr/lib/libz.so) /usr/lib/libz.so
+[ $? -gt 0 ] && return 1
 return 0
+

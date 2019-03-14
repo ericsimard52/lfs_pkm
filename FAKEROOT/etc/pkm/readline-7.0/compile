@@ -1,4 +1,5 @@
-processCmd "make SHLIB_LIBS='-L/tools/lib -lncursesw'"
+CMD=( make SHLIB_LIBS="-L/tools/lib -lncursesw" )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

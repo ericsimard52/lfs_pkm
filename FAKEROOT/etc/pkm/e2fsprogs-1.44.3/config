@@ -1,11 +1,5 @@
-processCmd "../configure --prefix=/usr           \
-             --bindir=/bin           \
-             --with-root-prefix=""   \
-             --enable-elf-shlibs     \
-             --disable-libblkid      \
-             --disable-libuuid       \
-             --disable-uuidd         \
-             --disable-fsck"
+CMD=( ../configure --prefix=/usr --bindir=/bin --with-root-prefix="" --enable-elf-shlibs --disable-libblkid --disable-libuuid --disable-uuidd --disable-fsck )
+processCmd
 [ $? -gt 0 ] && return 1
   return 0
   

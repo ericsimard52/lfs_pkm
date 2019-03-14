@@ -1,6 +1,9 @@
-processCmd "mkdir -pv /lib/udev/rules.d"
-processCmd "mkdir -pv /etc/udev/rules.d"
-processCmd "make LD_LIBRARY_PATH=/tools/lib check"
+CMD=( mkdir -pv /lib/udev/rules.d )
+processCmd
+CMD=( mkdir -pv /etc/udev/rules.d )
+processCmd
+CMD=( make LD_LIBRARY_PATH=/tools/lib check )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

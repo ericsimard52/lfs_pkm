@@ -1,6 +1,9 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+CMD=( make DESTDIR=$FAKEROOT/$SDN install )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "install -vdm755 $FAKEROOT/$SDN/lib"
-processCmd "mv -v $FAKEROOT/$SDN/usr/lib/libprocps.so.* $FAKEROOT/$SDN/lib"
+CMD=( install -vdm755 $FAKEROOT/$SDN/lib )
+processCmd
+CMD=( mv -v $FAKEROOT/$SDN/usr/lib/libprocps.so.* $FAKEROOT/$SDN/lib )
+processCmd
 
   

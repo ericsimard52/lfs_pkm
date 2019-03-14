@@ -1,8 +1,11 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+CMD=( make DESTDIR=$FAKEROOT/$SDN install )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "mv -v $FAKEROOT/$SDN/usr/bin/{hostname,ping,ping6,traceroute} $FAKEROOT/$SDN/bin"
+CMD=( mv -v $FAKEROOT/$SDN/usr/bin/"{hostname,ping,ping6,traceroute}" $FAKEROOT/$SDN/bin )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "mv -v $FAKEROOT/$SDN/usr/bin/ifconfig $FAKEROOT/$SDN/sbin"
+CMD=( mv -v $FAKEROOT/$SDN/usr/bin/ifconfig $FAKEROOT/$SDN/sbin )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

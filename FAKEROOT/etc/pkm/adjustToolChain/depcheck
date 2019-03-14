@@ -1,8 +1,8 @@
 log "GEN|INFO|Adjusting tool chain." t
-[ ! -f /tools/bin/ld-old ] && processCmd "mv -v /tools/bin/{ld,ld-old}"
-[ ! -f /tools/$(uname -m)-pc-linux-gnu/bin/ld-old ] && processCmd "mv -v /tools/$(uname -m)-pc-linux-gnu/bin/{ld,ld-old}"
-[ -f /tools/bin/ld-new ] && processCmd "mv -v /tools/bin/{ld-new,ld}"
-[ ! -f /tools/$(uname -m)-pc-linux-gnu/bin/ld ] && processCmd "ln -sv /tools/bin/ld /tools/$(uname -m)-pc-linux-gnu/bin/ld"
+[ ! -f /tools/bin/ld-old ] && mv -v /tools/bin/{ld,ld-old}
+[ ! -f /tools/$(uname -m)-pc-linux-gnu/bin/ld-old ] && mv -v /tools/$(uname -m)-pc-linux-gnu/bin/{ld,ld-old}
+[ -f /tools/bin/ld-new ] && mv -v /tools/bin/{ld-new,ld}
+[ ! -f /tools/$(uname -m)-pc-linux-gnu/bin/ld ] && ln -sv /tools/bin/ld /tools/$(uname -m)-pc-linux-gnu/bin/ld
 
 gcc -dumpspecs | sed -e 's@/tools@@g'                   \
     -e '/\*startfile_prefix_spec:/{n;s@.*@/usr/lib/ @}' \
@@ -29,7 +29,7 @@ unset ll
 
 log "GEN|INFO|Verify that the compiler is searching for the correct header files:" t
 
-processCmd "grep -B1 '^ /usr/include' dummy.log"
+grep -B1 '^ /usr/include' dummy.log
 [ $? -gt 0 ] && log "GEN|WARNING|Verification failed." t && return 1
 
 log "GEN|INFO|Next, verify that the new linker is being used with the correct search paths:"
@@ -65,6 +65,7 @@ if [[ ! "$sm" == "found $fn at /lib/$fn" ]]; then
     unset $fn
 fi
 
-processCmd "rm -v dummy.c a.out dummy.log"
+CMD=( rm -v dummy.c a.out dummy.log )
+processCmd
 log "GEN|INFO|Done! Good job." t
 return 0

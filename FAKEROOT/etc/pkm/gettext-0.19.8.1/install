@@ -1,6 +1,8 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN install"
+CMD=( make DESTDIR=$FAKEROOT/$SDN install )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "chmod -v 0755 $FAKEROOT/$SDN/usr/lib/preloadable_libintl.so"
+CMD=( chmod -v 0755 $FAKEROOT/$SDN/usr/lib/preloadable_libintl.so )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

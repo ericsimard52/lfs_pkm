@@ -1,5 +1,7 @@
-processCmd "chmod -v 755 $FAKEROOT/$SDN/usr/lib/libcap.so"
-[ ! -d $FAKEROOT/$SDN/lib ] && processCmd "install -vdm 644 $FAKEROOT/$SDN/lib"
-processCmd "mv -v $FAKEROOT/$SDN/usr/lib/libcap.so.* $FAKEROOT/$SDN/lib"
+CMD=( chmod -v 755 $FAKEROOT/$SDN/usr/lib/libcap.so )
+processCmd
+[ ! -d $FAKEROOT/$SDN/lib ] && CMD=( install -vdm 644 $FAKEROOT/$SDN/lib ) && processCmd
+CMD=( mv -v $FAKEROOT/$SDN/usr/lib/libcap.so.* $FAKEROOT/$SDN/lib )
+processCmd
 return 0
 

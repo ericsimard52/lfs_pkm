@@ -1,5 +1,7 @@
-processCmd "ln -sfv /tools/lib/lib{blk,uu}id.so.1 lib"
-processCmd "make LD_LIBRARY_PATH=/tools/lib check"
+CMD=( ln -sfv /tools/lib/lib{blk,uu}id.so.1 lib )
+processCmd
+CMD=( make LD_LIBRARY_PATH=/tools/lib check )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

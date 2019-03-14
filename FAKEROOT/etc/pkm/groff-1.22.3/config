@@ -1,5 +1,8 @@
-processCmd "PAGE=letter ./configure --prefix=/usr"
-  [ $? -gt 0 ] && return 1
-  return 0
+CMD=( export PAGE=letter )
+processCmd
+CMD=( ./configure --prefix=/usr )
+processCmd
+[ $? -gt 0 ] && return 1
+return 0
   
   

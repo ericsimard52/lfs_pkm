@@ -3,13 +3,5 @@ CC="gcc -isystem $GCC_INCDIR -isystem /usr/include" \
              --disable-werror                       \
              --enable-kernel=3.2                    \
              --enable-stack-protector=strong        \
-             libc_cv_slibdir=/lib \
-
+             libc_cv_slibdir=/lib
 unset GCC_INCDIR
-
-if [[ $? > 0 ]]; then
-    log "ERR|ERROR|Error running configure." t
-    return 1
-fi
-return 0
-  

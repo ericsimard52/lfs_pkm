@@ -1,4 +1,5 @@
-processCmd "make mrproper"
+CMD=(make mrproper)
+processCmd
 if [[ $? > 0 ]]; then
    return 1
 fi

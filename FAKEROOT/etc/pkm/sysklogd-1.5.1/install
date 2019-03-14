@@ -1,7 +1,9 @@
 ### Does not take DESTDIR at install, this effectivly installs in fakeroot.
-processCmd "install -vdm755 $FAKEROOT/$SDN/{sbin,man/man{5,8}}"
+CMD=( install -vdm755 $FAKEROOT/$SDN/{sbin,man/man{5,8}} )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "make BINDIR=$FAKEROOT/$SDN/sbin MANDIR=$FAKEROOT/$SDN/man install"
+CMD=( make BINDIR=$FAKEROOT/$SDN/sbin MANDIR=$FAKEROOT/$SDN/man install )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

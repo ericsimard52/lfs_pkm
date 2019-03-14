@@ -1,7 +1,12 @@
-processCmd "cp -v bzip2-shared $FAKEROOT/$SDN/bin/bzip2"
+[ ! -d $FAKEROOT/$SDN/bin ] && CMD=( install -vdm 644 $FAKEROOT/$SDN/bin ) && processCmd
+CMD=( cp -v bzip2-shared $FAKEROOT/$SDN/bin/bzip2 )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "cp -av libbz2.so* $FAKEROOT/$SDN/lib"
+[ ! -d $FAKEROOT/$SDN/lib ] && CMD=( install -vdm 644 $FAKEROOT/$SDN/lib ) && processCmd
+CMD=( cp -av libbz2.so* $FAKEROOT/$SDN/lib )
+processCmd
 [ $? -gt 0 ] && return 1
-[ ! -d $FAKEROOT/$SDN/usr/lib ] && processCmd "install -vdm 644 $FAKEROOT/$SDN/usr/lib"
-processCmd "rm -v $FAKEROOT/$SDN/usr/bin/{bunzip2,bzcat,bzip2}"
+[ ! -d $FAKEROOT/$SDN/usr/lib ] && CMD=( install -vdm 644 $FAKEROOT/$SDN/usr/lib ) && processCmd
+CMD=( rm -v $FAKEROOT/$SDN/usr/bin/{bunzip2,bzcat,bzip2} )
+processCmd
 return 0

@@ -1,3 +1,3 @@
-processCmd "sed -i '/MV.*old/d' Makefile.in"
-processCmd "sed -i '/{OLDSUFF}/c:' support/shlib-install"
+sed -i '/MV.*old/d' Makefile.in
+sed -i '/{OLDSUFF}/c:' support/shlib-install
 return 0

@@ -1,5 +1,8 @@
 ln -sfv /lib/$(readlink /usr/lib/libncursesw.so) /usr/lib/libncursesw.so
-processCmd "ln -sfv libncurses.so /usr/lib/libcurses.so"
-ln -sfv ${lib}w.pc        /usr/lib/pkgconfig/${lib}.pc
+
+CMD=( ln -sfv libncurses.so /usr/lib/libcurses.so )
+processCmd
+ln -sfv ${lib}w.pc /usr/lib/pkgconfig/${lib}.pc
+
 
 return 0

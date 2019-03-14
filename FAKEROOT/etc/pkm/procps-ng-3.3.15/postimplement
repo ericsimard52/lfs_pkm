@@ -1,1 +1,3 @@
-ln -sfv ../../lib/$(readlink /usr/lib/libprocps.so) /usr/lib/libprocps.so
+CMD=( ln -sfv ../../lib/$"(readlink /usr/lib/libprocps.so)" /usr/lib/libprocps.so )
+processCmd
+

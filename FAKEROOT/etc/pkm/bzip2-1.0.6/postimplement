@@ -1,7 +1,10 @@
-processCmd "ln -sv ../..//lib/libbz2.so.1.0 /usr/lib/libbz2.so"
+CMD=( ln -sv ../../lib/libbz2.so.1.0 /usr/lib/libbz2.so )
+processCmd
 
-processCmd "ln -sv bzip2 /bin/bunzip2"
+CMD=( ln -sv bzip2 /bin/bunzip2 )
+processCmd
 
-processCmd "ln -sv bzip2 /bin/bzcat"
+CMD=( ln -sv bzip2 /bin/bzcat )
+processCmd
 
 return 0

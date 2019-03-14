@@ -1,4 +1,5 @@
-processCmd "./configure --prefix=/usr --disable-static --with-gcc-arch=native"
+CMD=( ./configure --prefix=/usr --disable-static --with-gcc-arch=native )
+  processCmd
   [ $? -gt 0 ] && return 1
   return 0
   

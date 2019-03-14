@@ -1,8 +1,5 @@
-processCmd "./config --prefix=/usr         \
-         --openssldir=/etc/ssl \
-         --libdir=lib          \
-         shared                \
-         zlib-dynamic"
+CMD=( ./config --prefix=/usr --openssldir=/etc/ssl --libdir=lib shared zlib-dynamic )
+processCmd
 [ $? -gt 0 ] && return 1
   return 0
   

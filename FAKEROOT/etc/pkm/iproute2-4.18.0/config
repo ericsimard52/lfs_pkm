@@ -1,4 +1,5 @@
 sed -i /ARPD/d Makefile
-processCmd "rm -fv man/man8/arpd.8"
+CMD=( rm -fv man/man8/arpd.8 )
+  processCmd
 sed -i 's/.m_ipt.o//' tc/Makefile
 return 0

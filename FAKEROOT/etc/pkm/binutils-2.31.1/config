@@ -1,11 +1,5 @@
-processCmd "../configure --prefix=/usr       \
-             --enable-gold       \
-             --enable-ld=default \
-             --enable-plugins    \
-             --enable-shared     \
-             --disable-werror    \
-             --enable-64-bit-bfd \
-             --with-system-zlib"
+CMD=( ../configure --prefix=/usr --enable-gold --enable-ld=default --enable-plugins --enable-shared --disable-werror --enable-64-bit-bfd --with-system-zlib )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
   

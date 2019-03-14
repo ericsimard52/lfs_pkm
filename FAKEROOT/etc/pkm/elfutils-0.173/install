@@ -1,6 +1,8 @@
-processCmd "make DESTDIR=$FAKEROOT/$SDN -C libelf install"
+CMD=( make DESTDIR=$FAKEROOT/$SDN -C libelf install )
+processCmd
 [ $? -gt 0 ] && return 1
-processCmd "install -vm644 config/libelf.pc $FAKEROOT/$SDN/usr/lib/pkgconfig"
+CMD=( install -vm644 config/libelf.pc $FAKEROOT/$SDN/usr/lib/pkgconfig )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

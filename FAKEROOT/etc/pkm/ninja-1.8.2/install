@@ -1,6 +1,10 @@
-processCmd "install -vdm755 $FAKEROOT/$SDN/usr/bin"
-processCmd "install -vm755 ninja $FAKEROOT/$SDN/usr/bin/"
-processCmd "install -vDm644 misc/bash-completion $FAKEROOT/$SDN/usr/share/bash-completion/completions/ninja"
-processCmd "install -vDm644 misc/zsh-completion  $FAKEROOT/$SDN/usr/share/zsh/site-functions/_ninja"
+CMD=( install -vdm755 $FAKEROOT/$SDN/usr/bin )
+processCmd
+CMD=( install -vm755 ninja $FAKEROOT/$SDN/usr/bin/ )
+processCmd
+CMD=( install -vDm644 misc/bash-completion $FAKEROOT/$SDN/usr/share/bash-completion/completions/ninja )
+processCmd
+CMD=( install -vDm644 misc/zsh-completion  $FAKEROOT/$SDN/usr/share/zsh/site-functions/_ninja )
+processCmd
 return 0
   

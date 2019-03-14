@@ -1,3 +1,5 @@
-processCmd "mkdir -pv /var/lib/hwclock"
-processCmd "rm -vf /usr/include/{blkid,libmount,uuid}"
+CMD=( mkdir -pv /var/lib/hwclock )
+processCmd
+CMD=( rm -vf /usr/include/{blkid,libmount,uuid} )
+processCmd
 return 0  

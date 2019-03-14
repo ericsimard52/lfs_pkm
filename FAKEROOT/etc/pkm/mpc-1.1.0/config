@@ -1,5 +1,4 @@
-processCmd "./configure --prefix=/usr    \
-            --disable-static \
-            --docdir=/usr/share/doc/mpc-1.1.0"
+CMD=( ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/mpc-1.1.0 )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0

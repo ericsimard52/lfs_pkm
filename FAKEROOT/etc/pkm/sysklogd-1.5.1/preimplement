@@ -1,4 +1,5 @@
-processCmd "install -vdm755 $FAKEROOT/$SDN/etc"
+CMD=( install -vdm755 $FAKEROOT/$SDN/etc )
+processCmd
 cat > $FAKEROOT/$SDN/etc/syslog.conf << "EOF"
 # Begin /etc/syslog.conf
 

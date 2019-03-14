@@ -1,17 +1,20 @@
 log "GEN|INFO|Install the configuration file and runtime directory for nscd." t
 if [[ ! -f /etc/nscd.conf ]]; then
-    processCmd "cp -v ../nscd/nscd.conf /etc/nscd.conf"
+    CMD=( cp -v ../nscd/nscd.conf /etc/nscd.conf )
+    processCmd
 else
     log "GEN|WARNING|nscd.conf already exists." t
 fi
 
 if [[ ! -d /var/cache/nscd ]]; then
-    processCmd "mkdir -pv /var/cache/nscd"
+    CMD=( mkdir -pv /var/cache/nscd )
+    processCmd
 fi
 
 log "GEN|INFO|Install the locales that can make the system respond in a different language." t
 if [[ ! -d /usr/lib/locale ]]; then
-    processCmd "mkdir -pv /usr/lib/locale"
+    CMD=( mkdir -pv /usr/lib/locale )
+    processCmd
 fi
 localedef -v -i cs_CZ -f UTF-8 cs_CZ.UTF-8
 localedef -v -i de_DE -f ISO-8859-1 de_DE
@@ -96,7 +99,8 @@ include /etc/ld.so.conf.d/*.conf
 EOF
 
 if [[ ! -d /etc/ld.so.conf.d  ]]; then
-    processCmd "mkdir -pv /etc/ld.so.conf.d"
+    CMD=( mkdir -pv /etc/ld.so.conf.d )
+    processCmd
 fi
 
 

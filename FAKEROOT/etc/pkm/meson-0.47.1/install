@@ -1,5 +1,7 @@
-processCmd "python3 setup.py install --root=dest"
-processCmd "cp -rv dest/* $FAKEROOT/$SDN"
+CMD=( python3 setup.py install --root=dest )
+processCmd
+CMD=( cp -rv dest/* $FAKEROOT/$SDN )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

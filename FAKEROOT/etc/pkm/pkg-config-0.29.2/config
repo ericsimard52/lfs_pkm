@@ -1,7 +1,5 @@
-processCmd "./configure --prefix=/usr              \
-            --with-internal-glib       \
-            --disable-host-tool        \
-            --docdir=/usr/share/doc/pkg-config-0.29.2"
+CMD=( ./configure --prefix=/usr --with-internal-glib --disable-host-tool --docdir=/usr/share/doc/pkg-config-0.29.2 )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
   

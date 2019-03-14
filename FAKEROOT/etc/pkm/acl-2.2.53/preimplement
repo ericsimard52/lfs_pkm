@@ -1,3 +1,4 @@
-[ ! -d $FAKEROOT/$SDN/lib ] && processCmd "install -vdm 644 $FAKEROOT/$SDN/lib"
-processCmd "mv -v $FAKEROOT/$SDN/usr/lib/libacl.so.* $FAKEROOT/$SDN/lib"
+[ ! -d $FAKEROOT/$SDN/lib ] && CMD=( install -vdm 644 $FAKEROOT/$SDN/lib ) && processCmd
+CMD=( mv -v $FAKEROOT/$SDN/usr/lib/libacl.so.* $FAKEROOT/$SDN/lib )
+processCmd
 return 0

@@ -1,4 +1,5 @@
-processCmd "patch -Np1 -i ../bzip2-1.0.6-install_docs-1.patch"
+CMD=( patch -Np1 -i ../bzip2-1.0.6-install_docs-1.patch )
+processCmd
 
 sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
 [ $? -gt 0 ] && return 1

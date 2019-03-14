@@ -1,4 +1,5 @@
-processCmd "ln -sv flex /usr/bin/lex"
+CMD=( ln -sv flex /usr/bin/lex )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
 

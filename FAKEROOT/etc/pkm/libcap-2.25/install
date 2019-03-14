@@ -1,3 +1,4 @@
-processCmd "make RAISE_SETFCAP=no lib=lib DESTDIR=$FAKEROOT/$SDN prefix=/usr install"
+CMD=( make  lib=lib DESTDIR=$FAKEROOT/$SDN prefix=/usr install )
+processCmd
 [ $? -gt 0 ] && return 1
 return 0
