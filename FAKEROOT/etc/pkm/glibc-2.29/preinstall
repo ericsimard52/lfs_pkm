@@ -1,9 +1,7 @@
 CMD=( touch /etc/ld.so.conf )
 processCmd
-if [[ $? > 0 ]]; then
-    log "GEN|ERROR|Error with touch /etc/ld.so.conf" t
-    return 1
-fi
+[ $? -gt 0 ] && return 1
+
 sed '/test-installation/s@$\(PERL\)@echo not running@' -i ../Makefile
 if [[ $? > 0 ]]; then
     log "GEN|ERROR|Error with sed command." t

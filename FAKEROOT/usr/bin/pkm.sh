@@ -14,7 +14,7 @@ declare SLP="/var/log/pkm"
 declare SECONDARYLOGPATH SECONDARYLOGFILE SECONDARYLOGFD 
 declare SECONDARYLOGACTIVE=1
 declare CMD
-
+declare DEVMODE=0
 # Config files
 declare GENCONFIGFILE DEPCHECKCMDFILE PRECONFIGCMDFILE CONFIGCMDFILE COMPILECMDFILE CHECKCMDFILE
 declare PREINSTALLCMDFILE INSTALLCMDFILE PREIMPLEMENTCMDFILE POSTIMPLEMENTCMDFILE
@@ -153,6 +153,11 @@ function readConfig {
                 LOGFILE=${PARAM[1]}
                 log "NULL|INFO|Set param LOGFILE:$LOGFILE" t t
                 ;;
+            devMode)
+                DEVMODE=${PARAM[1]}
+                log "NULL|INFO|Set param devMode:$DEVMODE" t
+                ;;
+
             "#") continue;;
             *) continue;;
         esac
@@ -192,6 +197,17 @@ function processCmd {
 
     fi
     unset CMD
+
+    if [ $DEVMODE -eq 0 ]; then
+        promptUser "\e[31mDevmode is on.\e[0m Review previous commands: \e[93m$cmd_str\e[0m. Continue? Y/n"
+        read U
+        case $U in
+            n|N)
+                return 1
+                ;;
+        esac
+    fi
+
     return 0
 }
 
@@ -954,6 +970,12 @@ function evalPrompt {
                 return
             fi
             DEBUG=$2
+            ;;
+        devmode)
+            if [[ "$2" = "" ]]; then
+                return
+            fi
+            DEVMODE=$2
             ;;
         reload)
             readConfig

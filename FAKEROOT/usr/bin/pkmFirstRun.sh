@@ -9,7 +9,10 @@ mkdir -v  /usr/libexec
 mkdir -pv /usr/{,local/}share/man/man{1..8}
 
 case $(uname -m) in
- x86_64) mkdir -v /lib64 ;;
+    x86_64)
+        mkdir -v /lib64
+        ln -sv /tools/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+        ;;
 esac
 
 mkdir -v /var/{log,mail,spool}

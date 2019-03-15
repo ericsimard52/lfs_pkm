@@ -1,0 +1,14 @@
+CMD=( export CC="gcc -isystem $GCC_INCDIR -isystem /usr/include" )
+processCmd
+[ $? -gt 0 ] && return 1
+
+CMD=( ../configure --prefix=/usr --disable-werror --enable-kernel=3.2 --enable-stack-protector=strong libc_cv_slibdir=/lib )
+processCmd
+[ $? -gt 0 ] && return 1
+
+CMD=( unset GCC_INCDIR )
+processCmd
+[ $? -gt 0 ] && return 1
+
+return 0
+

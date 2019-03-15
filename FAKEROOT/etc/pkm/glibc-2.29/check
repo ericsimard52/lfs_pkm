@@ -1,0 +1,16 @@
+case $(uname -m) in
+    i?86)
+        CMD=( ln -sfnv $PWD/elf/ld-linux.so.2 /lib )
+        processCmd
+        [ $? -gt 0 ] && return 1
+        ;;
+    x86_64)
+        CMD=( ln -sfnv $PWD/elf/ld-linux-x86-64.so.2 /lib )
+        processCmd
+        [ $? -gt 0 ] && return 1
+        ;;
+esac
+CMD=( make check )
+processCmd
+[ $? -gt 0 ] && return 1
+return 0

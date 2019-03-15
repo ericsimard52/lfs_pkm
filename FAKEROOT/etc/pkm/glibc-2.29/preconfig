@@ -1,0 +1,33 @@
+CMD=( patch -Np1 -i ../glibc-2.29-fhs-1.patch )
+processCmd
+[ $? -gt 0 ] && return 1
+CMD=( ln -sfv /tools/lib/gcc /usr/lib )
+processCmd
+[ $? -gt 0 ] && return 1
+
+case $(uname -m) in
+    i?86)
+        GCC_INCDIR=/usr/lib/gcc/$(uname -m)-pc-linux-gnu/8.2.0/include
+        CMD=( ln -sfv ld-linux.so.2 /lib/ld-lsb.so.3 )
+        processCmd
+        [ $? -gt 0 ] && return 1
+
+    ;;
+    x86_64)
+        CMD=( export GCC_INCDIR=/usr/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include )
+        processCmd
+        [ $? -gt 0 ] && return 1
+        CMD=( ln -sfv ../lib/ld-linux-x86-64.so.2 /lib64 )
+        processCmd
+        [ $? -gt 0 ] && return 1
+        CMD=( ln -sfv ../lib/ld-linux-x86-64.so.2 /lib64/ld-lsb-x86-64.so.3 )
+        processCmd
+        [ $? -gt 0 ] && return 1
+
+    ;;
+esac
+CMD=( rm -f /usr/include/limits.h )
+processCmd
+[ $? -gt 0 ] && return 1
+return 0
+
